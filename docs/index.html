@@ -1,117 +1,233 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>COCO Multimodal Caption Classification</title>
+    <!-- Include FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            line-height: 1.6;
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 20px;
-            color: #333;
+        :root {
+            --bg-color: #f9fafb;
+            --container-bg: #ffffff;
+            --text-main: #334155;
+            --heading-color: #0f172a;
+            --primary-blue: #2563eb;
+            --primary-hover: #1d4ed8;
+            --border-color: #e2e8f0;
         }
 
-        h1,
-        h2,
-        h3 {
-            color: #2c3e50;
-            border-bottom: 1px solid #efefef;
-            padding-bottom: 5px;
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 40px 20px;
+            line-height: 1.7;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--container-bg);
+            padding: 50px 60px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+        }
+
+        h1 {
+            color: var(--heading-color);
+            font-weight: 700;
+            font-size: 2.2rem;
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #64748b;
+            font-size: 1.1rem;
+            margin-bottom: 35px;
+        }
+
+        h2 {
+            color: var(--heading-color);
+            font-size: 1.5rem;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 8px;
+            margin-top: 40px;
+            margin-bottom: 20px;
         }
 
         img {
             max-width: 100%;
             height: auto;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: block;
+            margin: 25px auto;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .links {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 40px;
         }
 
         .links a {
-            padding: 10px 15px;
-            margin-right: 10px;
-            display: inline-block;
-            background-color: #0366d6;
+            padding: 12px 20px;
+            background-color: var(--primary-blue);
             color: white;
             text-decoration: none;
-            border-radius: 5px;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: all 0.2s ease-in-out;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
         }
 
         .links a:hover {
-            background-color: #024b9e;
+            background-color: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+        }
+
+        .links a i {
+            font-size: 1.1em;
+        }
+
+        /* YouTube specific styling */
+        .links a.yt-btn {
+            background-color: #dc2626;
+            box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
+        }
+        .links a.yt-btn:hover {
+            background-color: #b91c1c;
+            box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
+        }
+
+        /* HF specific styling */
+        .links a.hf-btn {
+            background-color: #eab308;
+            color: #fff;
+            box-shadow: 0 2px 4px rgba(234, 179, 8, 0.2);
+        }
+        .links a.hf-btn:hover {
+            background-color: #ca8a04;
+            box-shadow: 0 4px 8px rgba(234, 179, 8, 0.3);
+        }
+
+        ul {
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 10px;
         }
 
         code {
-            background-color: #f6f8fa;
-            padding: 2px 5px;
-            border-radius: 3px;
-            font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+            background-color: #f1f5f9;
+            color: #db2777;
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.9em;
         }
 
-        pre {
-            background-color: #f6f8fa;
-            padding: 10px;
-            border-radius: 5px;
-            overflow-x: auto;
+        footer {
+            margin-top: 50px;
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 30px 20px;
+                margin: 0;
+                border-radius: 0;
+            }
+            body {
+                padding: 0;
+                background-color: var(--container-bg);
+            }
+            .links {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .links a {
+                justify-content: center;
+            }
         }
     </style>
 </head>
 
 <body>
-    <h1>COCO Multimodal Caption Classification</h1>
+    <div class="container">
+        <h1>COCO Multimodal Caption Classification</h1>
+        <p class="subtitle">Exploring Zero-shot and Few-shot Learning with CLIP and PyTorch</p>
 
-    <div class="links">
-        <a href="#">GitHub Source Code</a>
-        <a href="#">Video Demo (YouTube)</a>
-        <a href="#">Video Report (YouTube)</a>
-        <a href="#">Gradio Demo (HF Spaces)</a>
+        <div class="links">
+            <a href="#"><i class="fab fa-github"></i> GitHub Source Code</a>
+            <a href="#" class="yt-btn"><i class="fab fa-youtube"></i> Video Demo</a>
+            <a href="#" class="yt-btn"><i class="fab fa-youtube"></i> Video Report</a>
+            <a href="#" class="hf-btn"><i class="fas fa-rocket"></i> Gradio Demo</a>
+        </div>
+
+        <h2>Introduction</h2>
+        <p>This project evaluates <strong>Zero-shot and Few-shot Learning</strong> using CLIP models on the COCO dataset.
+            Instead of standard categorization, the task requires the model to correctly identify the true caption among
+            distracted candidates.</p>
+        <ul>
+            <li><strong>Input:</strong> An image and N=5 candidate captions (1 ground-truth, 4 random distractors).</li>
+            <li><strong>Output:</strong> The index of the predicted matching caption.</li>
+            <li><strong>Dataset:</strong> A curated subset containing 10 categories (bear, zebra, elephant, etc.), with ~30K
+                total samples carefully filtered from standard COCO multimodal subsets.</li>
+        </ul>
+
+        <h2>Exploratory Data Analysis (EDA)</h2>
+        <p>Our dataset exhibits natural distributions simulating real-world scenarios. We visualized image samples with
+            their paired texts below.</p>
+        <img src="images/eda_distribution.png" alt="Data Distribution Bar Chart">
+        <img src="images/eda_grid.png" alt="3x3 Image Grid">
+
+        <h2>Data Configuration & Workflow</h2>
+        <ul>
+            <li><strong>Splitting:</strong> <code>k={0, 8, 16, 32}</code> shots removed exclusively for the linear probing,
+                preserving strict test set separation.</li>
+            <li><strong>Normalization:</strong> Configured precisely per standard CLIP requirements (mean <code>[0.481, 0.457,
+                0.408]</code> vs <code>[0.268, 0.261, 0.275]</code>).</li>
+        </ul>
+
+        <h2>Model Architecture</h2>
+        <p>Using ViT-B/32 and ResNet50 vision encoders. We attach a custom 1D Linear head and fine-tune using Cross-Entropy
+            over the generated logit similarity scores.</p>
+        <img src="images/architecture.png" alt="Model Architecture Flowchart">
+
+        <h2>Training Performance (WandB)</h2>
+        <p>The models track parameters such as Accuracy and macro F1 curves over continuous fine-tuning.</p>
+        <img src="images/wandb_accuracy_plot.png" alt="WandB Accuracy Output">
+
+        <h2>Interpretability & Visualization</h2>
+        <p>Understanding what regions models rely on via Attention Rollout, GradCam, and EigenCam.</p>
+        <img src="images/gradcam_sample.png" alt="GradCAM interpretations">
+
+        <footer>
+            <p>Built with PyTorch, CLIP, Hugging Face Gradio, and WandB. <br><i class="fas fa-heart" style="color: #ef4444; margin-top: 10px;"></i></p>
+        </footer>
     </div>
-
-    <h2>Introduction</h2>
-    <p>This project evaluates <strong>Zero-shot and Few-shot Learning</strong> using CLIP models on the COCO dataset.
-        Instead of standard categorization, the task requires the model to correctly identify the true caption among
-        distracted candidates.</p>
-    <ul>
-        <li><strong>Input:</strong> An image and N=5 candidate captions (1 ground-truth, 4 random distractors).</li>
-        <li><strong>Output:</strong> The index of the predicted matching caption.</li>
-        <li><strong>Dataset:</strong> A curated subset containing 10 categories (bear, zebra, elephant, etc.), with ~30K
-            total samples carefully filtered from standard COCO multimodal subsets.</li>
-    </ul>
-
-    <h2>Exploratory Data Analysis (EDA)</h2>
-    <p>Our dataset exhibits natural distributions simulating real-world scenarios. We visualized image samples with
-        their paired texts below.</p>
-    <img src="images/eda_distribution.png" alt="Data Distribution Bar Chart">
-    <img src="images/eda_grid.png" alt="3x3 Image Grid">
-
-    <h2>Data Configuration & Workflow</h2>
-    <ul>
-        <li><strong>Splitting:</strong> $k=\{0, 8, 16, 32\}$ shots removed exclusively for the linear probing,
-            preserving strict test set separation.</li>
-        <li><strong>Normalization:</strong> Configured precisely per standard CLIP requirements (mean `[0.481, 0.457,
-            0.408]` vs `[0.268, 0.261, 0.275]`).</li>
-    </ul>
-
-    <h2>Model Architecture</h2>
-    <p>Using ViT-B/32 and ResNet50 vision encoders. We attach a custom 1D Linear head and fine-tune using Cross-Entropy
-        over the generated logit similarity scores.</p>
-    <img src="images/architecture.png" alt="Model Architecture Flowchart">
-
-    <h2>Training Performance (WandB)</h2>
-    <p>The models track parameters such as Accuracy and macro F1 curves over continuous fine-tuning.</p>
-    <img src="images/wandb_accuracy_plot.png" alt="WandB Accuracy Output">
-
-    <h2>Interpretability & Visualization</h2>
-    <p>Understanding what regions models rely on via Attention Rollout, GradCam, and EigenCam.</p>
-    <img src="images/gradcam_sample.png" alt="GradCAM interpretations">
-
-    <footer>
-        <p><em>Built with PyTorch, CLIP, Hugging Face Gradio, and WandB.</em></p>
-    </footer>
 </body>
 
 </html>

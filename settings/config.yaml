@@ -1,5 +1,6 @@
 dataset:
   subset_dir: "coco_subset_images"
+  image_dir: "coco_subset_images/images"
   subset_file: "coco_multimodal_subset.json"
   num_distractors: 4 # So N=5 (1 GT + 4 distractors)
 
@@ -16,4 +17,4 @@ models:
   
 wandb:
   project: "coco_caption_classification"
-  entity: "thailearncoding" # Add your wandb username/entity here
+  entity: "thailearncoding-ho-chi-minh-university-of-technology" # Add your wandb username/entity here

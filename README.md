@@ -14,6 +14,8 @@ Instead of standard categorical classification, the model is presented with an i
 ```text
 coco_caption_classification/
 ├── coco_subset_images/              # Extracted image data + JSON
+│   ├── images/                      # Link of images
+│   │   └── <id>.jpg                 # Base metadata definition
 │   └── coco_multimodal_subset.json  # Base metadata definition
 ├── models/                          # Weights & checkpoints
 ├── notebooks/
