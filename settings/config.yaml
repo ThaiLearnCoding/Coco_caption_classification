@@ -6,8 +6,9 @@ dataset:
 
 training:
   batch_size: 32
-  learning_rate: 0.001
-  epochs: 20
+  learning_rate: 0.001 # Increased default LR for adapter tuning
+  weight_decay: 0.001 # Reduced L2 penalty since bottleneck self-regularizes
+  epochs: 25 # Reduced to 25 to save time
   k_shots: [8] # add 16, 32 if have time
   device: "cuda"
 
