@@ -146,6 +146,37 @@
             font-size: 0.9em;
         }
 
+        .performance-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            font-size: 0.95rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .performance-table th,
+        .performance-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .performance-table th {
+            background-color: #f8fafc;
+            color: var(--heading-color);
+            font-weight: 600;
+        }
+
+        .performance-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .performance-table tr:hover {
+            background-color: #f1f5f9;
+        }
+
         footer {
             margin-top: 50px;
             text-align: center;
@@ -185,7 +216,8 @@
         <p class="subtitle">Exploring Zero-shot and Few-shot Learning with CLIP and PyTorch</p>
 
         <div class="links">
-            <a href="#"><i class="fab fa-github"></i> GitHub Source Code</a>
+            <a href="https://github.com/ThaiLearnCoding/Coco_caption_classification" target="_blank"><i
+                    class="fab fa-github"></i> GitHub Source Code</a>
             <a href="#" class="yt-btn"><i class="fab fa-youtube"></i> Video Demo</a>
             <a href="#" class="yt-btn"><i class="fab fa-youtube"></i> Video Report</a>
             <a href="#" class="hf-btn"><i class="fas fa-rocket"></i> Gradio Demo</a>
@@ -228,6 +260,70 @@
 
         <h2>Training Performance (WandB)</h2>
         <p>The models track parameters such as Accuracy and macro F1 curves over continuous fine-tuning.</p>
+
+        <h3>Model Performance Comparison</h3>
+        <p>Below is the detailed evaluation of the models on 11,640 samples, comparing Zero-shot and Few-shot
+            capabilities, alongside their architectural efficiency:</p>
+
+        <div style="overflow-x: auto;">
+            <table class="performance-table">
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>ViT-B/32</th>
+                        <th>ResNet50 (RN50)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Zero-Shot Accuracy</strong></td>
+                        <td>89.97%</td>
+                        <td>90.18%</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Zero-Shot F1 Score</strong></td>
+                        <td>89.98%</td>
+                        <td>90.18%</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Few-Shot Accuracy</strong></td>
+                        <td>90.05%</td>
+                        <td><i>N/A</i></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Few-Shot F1 Score</strong></td>
+                        <td>90.05%</td>
+                        <td><i>N/A</i></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Total Parameters</strong></td>
+                        <td>151,342,849</td>
+                        <td>102,269,281</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Trainable Parameters</strong></td>
+                        <td>65,536</td>
+                        <td>262,144</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Model Size</strong></td>
+                        <td>337.31 MB</td>
+                        <td>244.44 MB</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Total Inference Time</strong></td>
+                        <td>145.06s</td>
+                        <td>153.85s</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Avg Inference Time / sample</strong></td>
+                        <td>~12.46 ms</td>
+                        <td>~13.22 ms</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
         <img src="images/vit_b32_8shot_train_acc.png" alt="Training Accuracy">
         <img src="images/vit_b32_8shot_train_loss.png" alt="Training Loss">
         <img src="images/vit_b32_8shot_eval_acc.png" alt="Evaluation Accuracy">
