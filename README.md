@@ -23,7 +23,7 @@ coco_caption_classification/
 │   ├── model_arch.py                # Wrapper models based on openai/CLIP
 │   ├── Image_ID_Exclusive_Sampling.ipynb # The data subset generation script
 │   └── utils.py                     # Evaluation functions & parameter counter
-├── github_page/                     # Visual presentation output
+├── docs/                     # Visual presentation output
 ├── settings/
 │   ├── requirements.txt             # Primary environment targets
 │   ├── requirements_gradio.txt      # Huggingface targeted deps
@@ -62,4 +62,4 @@ This renders a randomized subset display mapping 1 image against N distractors a
 
 ## 📊 Report and Info
 
-Please refer to the [GitHub Pages Site](./github_page/index.html) or the provided Youtube Links for the complete metric visualization and architectural diagrams breakdown.
+Please refer to the [GitHub Pages Site](./docs/index.html) or the provided Youtube Links for the complete metric visualization and architectural diagrams breakdown.
