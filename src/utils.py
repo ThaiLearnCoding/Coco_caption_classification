@@ -9,6 +9,17 @@ clip_normalize = Normalize(
     std=(0.26862954, 0.26130258, 0.27577711)
 )
 
+def get_image_transform(image_size=224):
+    """
+    Standard image transformation pipeline for models like ViT or ResNet.
+    """
+    return Compose([
+        Resize(image_size, interpolation=3), # InterpolationMode.BICUBIC
+        CenterCrop(image_size),
+        ToTensor(),
+        clip_normalize
+    ])
+
 def evaluate_model(model, dataloader, device):
     model.eval()
     all_preds = []
