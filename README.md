@@ -5,7 +5,7 @@
 
 This project focuses on **Multimodal Classification** using the COCO dataset. It evaluates the model’s ability to align visual semantics with complex linguistic context through **Zero-shot** and **Few-shot** learning.
 
-Instead of standard categorical classification, the model is presented with an image and a set of $N$ candidate text descriptions ($N \ge 5$). The objective is to identify the one true ground-truth description, overcoming the $N-1$ distractors.
+Instead of standard categorical classification, the model is presented with an image and a set of $N$ candidate text descriptions ($N \ge 12$). The objective is to identify the one true ground-truth description, overcoming the $N-1$ distractors.
 
 ---
 

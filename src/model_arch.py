@@ -47,7 +47,7 @@ class CLIPZeroShotClassifier(nn.Module):
         return similarities
 
 class ResidualDualProbeClassifier(nn.Module):
-    def __init__(self, model_name="ViT-B/32", device="cuda" if torch.cuda.is_available() else "cpu", n_captions=5):
+    def __init__(self, model_name="ViT-B/32", device="cuda" if torch.cuda.is_available() else "cpu", n_captions=12):
         super().__init__()
         self.device = device
         self.model, self.preprocess = clip.load(model_name, device=device)

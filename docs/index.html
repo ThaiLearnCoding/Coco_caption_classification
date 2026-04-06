@@ -111,6 +111,7 @@
             background-color: #dc2626;
             box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
         }
+
         .links a.yt-btn:hover {
             background-color: #b91c1c;
             box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
@@ -122,6 +123,7 @@
             color: #fff;
             box-shadow: 0 2px 4px rgba(234, 179, 8, 0.2);
         }
+
         .links a.hf-btn:hover {
             background-color: #ca8a04;
             box-shadow: 0 4px 8px rgba(234, 179, 8, 0.3);
@@ -159,14 +161,17 @@
                 margin: 0;
                 border-radius: 0;
             }
+
             body {
                 padding: 0;
                 background-color: var(--container-bg);
             }
+
             .links {
                 flex-direction: column;
                 align-items: stretch;
             }
+
             .links a {
                 justify-content: center;
             }
@@ -187,13 +192,16 @@
         </div>
 
         <h2>Introduction</h2>
-        <p>This project evaluates <strong>Zero-shot and Few-shot Learning</strong> using CLIP models on the COCO dataset.
+        <p>This project evaluates <strong>Zero-shot and Few-shot Learning</strong> using CLIP models on the COCO
+            dataset.
             Instead of standard categorization, the task requires the model to correctly identify the true caption among
             distracted candidates.</p>
         <ul>
-            <li><strong>Input:</strong> An image and N=5 candidate captions (1 ground-truth, 4 random distractors).</li>
+            <li><strong>Input:</strong> An image and N=10 candidate captions (1 ground-truth, 11 random distractors).
+            </li>
             <li><strong>Output:</strong> The index of the predicted matching caption.</li>
-            <li><strong>Dataset:</strong> A curated subset containing 10 categories (bear, zebra, elephant, etc.), with ~30K
+            <li><strong>Dataset:</strong> A curated subset containing 10 categories (bear, zebra, elephant, etc.), with
+                ~30K
                 total samples carefully filtered from standard COCO multimodal subsets.</li>
         </ul>
 
@@ -205,14 +213,16 @@
 
         <h2>Data Configuration & Workflow</h2>
         <ul>
-            <li><strong>Splitting:</strong> <code>k={0, 8, 16, 32}</code> shots removed exclusively for the linear probing,
+            <li><strong>Splitting:</strong> <code>k={0, 8, 16, 32}</code> shots removed exclusively for the linear
+                probing,
                 preserving strict test set separation.</li>
             <li><strong>Normalization:</strong> Configured precisely per standard CLIP requirements (mean <code>[0.481, 0.457,
                 0.408]</code> vs <code>[0.268, 0.261, 0.275]</code>).</li>
         </ul>
 
         <h2>Model Architecture</h2>
-        <p>Using ViT-B/32 and ResNet50 vision encoders. We attach a custom 1D Linear head and fine-tune using Cross-Entropy
+        <p>Using ViT-B/32 and ResNet50 vision encoders. We attach a custom 1D Linear head and fine-tune using
+            Cross-Entropy
             over the generated logit similarity scores.</p>
         <img src="images/architecture.png" alt="Model Architecture Flowchart">
 
@@ -225,7 +235,8 @@
         <img src="images/gradcam_sample.png" alt="GradCAM interpretations">
 
         <footer>
-            <p>Built with PyTorch, CLIP, Hugging Face Gradio, and WandB. <br><i class="fas fa-heart" style="color: #ef4444; margin-top: 10px;"></i></p>
+            <p>Built with PyTorch, CLIP, Hugging Face Gradio, and WandB. <br><i class="fas fa-heart"
+                    style="color: #ef4444; margin-top: 10px;"></i></p>
         </footer>
     </div>
 </body>

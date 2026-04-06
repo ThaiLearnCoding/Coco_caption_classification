@@ -2,7 +2,7 @@ dataset:
   subset_dir: "coco_subset_images"
   image_dir: "coco_subset_images/images"
   subset_file: "coco_multimodal_subset.json"
-  num_distractors: 4 # So N=5 (1 GT + 4 distractors)
+  num_distractors: 11 # So N=12 (1 GT + 11 distractors)
 
 training:
   batch_size: 32

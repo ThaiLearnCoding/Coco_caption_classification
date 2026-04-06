@@ -54,7 +54,7 @@ with gr.Blocks(title="COCO Multimodal Zero-shot Classification") as demo:
     
     with gr.Row():
         with gr.Column():
-            n_slider = gr.Slider(minimum=3, maximum=5, step=1, value=5, label="Number of Captions (N)")
+            n_slider = gr.Slider(minimum=3, maximum=12, step=1, value=12, label="Number of Captions (N)")
             shuffle_btn = gr.Button("Shuffle & Load Random Sample")
             
             image_out = gr.Image(label="Input Image")
