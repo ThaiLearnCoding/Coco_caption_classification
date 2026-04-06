@@ -91,6 +91,11 @@ def extract_image_attention(model, preprocess, image_path, text_query, device, m
         # Load and preprocess image
         original_image = Image.open(image_path).convert("RGB")
         img_tensor = preprocess(original_image).unsqueeze(0).to(device)
+        
+        # Match data type of model parameters (often float16 in CLIP on CUDA)
+        model_dtype = next(base_model.parameters()).dtype
+        img_tensor = img_tensor.to(dtype=model_dtype)
+        
         text_tokens = clip.tokenize([text_query]).to(device)
         
         # Prepare image for visualization
