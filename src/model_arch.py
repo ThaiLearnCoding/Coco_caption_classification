@@ -61,16 +61,24 @@ class ResidualDualProbeClassifier(nn.Module):
         # Extract features dim based on model
         self.dim = self.model.visual.output_dim
         
-        # Residual Dual-Encoder heads
-        self.dropout = nn.Dropout(p=0.4)
-        self.img_gate = nn.Linear(self.dim, self.dim)
-        self.txt_gate = nn.Linear(self.dim, self.dim)
+        # Residual Dual-Encoder heads (Upgraded to Bottleneck Adapters to prevent parameter-heavy overfitting)
+        self.dropout = nn.Dropout(p=0.5)
+        hidden_dim = self.dim // 16 # Create a strict bottleneck constraint
+        
+        self.img_gate = nn.Sequential(
+            nn.Linear(self.dim, hidden_dim, bias=False),
+            nn.ReLU(inplace=True),
+            nn.Linear(hidden_dim, self.dim, bias=False)
+        )
+        self.txt_gate = nn.Sequential(
+            nn.Linear(self.dim, hidden_dim, bias=False),
+            nn.ReLU(inplace=True),
+            nn.Linear(hidden_dim, self.dim, bias=False)
+        )
         
         # Initialize to zero to start at CLIP Zero-Shot baseline
-        nn.init.zeros_(self.img_gate.weight)
-        nn.init.zeros_(self.img_gate.bias)
-        nn.init.zeros_(self.txt_gate.weight)
-        nn.init.zeros_(self.txt_gate.bias)
+        nn.init.zeros_(self.img_gate[2].weight)
+        nn.init.zeros_(self.txt_gate[2].weight)
         
     def forward(self, image, text_candidates):
         B = image.shape[0]
