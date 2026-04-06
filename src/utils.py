@@ -88,14 +88,13 @@ def extract_image_attention(model, preprocess, image_path, text_query, device, m
         else:
             base_model = model
             
+        # Temporarily cast to float32 to avoid GradCAM HalfTensor errors
+        prev_dtype = next(base_model.parameters()).dtype
+        base_model.float()
+
         # Load and preprocess image
         original_image = Image.open(image_path).convert("RGB")
-        img_tensor = preprocess(original_image).unsqueeze(0).to(device)
-        
-        # Match data type of model parameters (often float16 in CLIP on CUDA)
-        model_dtype = next(base_model.parameters()).dtype
-        img_tensor = img_tensor.to(dtype=model_dtype)
-        
+        img_tensor = preprocess(original_image).unsqueeze(0).to(device).float()
         text_tokens = clip.tokenize([text_query]).to(device)
         
         # Prepare image for visualization
@@ -103,10 +102,17 @@ def extract_image_attention(model, preprocess, image_path, text_query, device, m
         rgb_img = cv2.resize(rgb_img, (224, 224))
         
         # Determine target layer based on model type
+        def reshape_transform(tensor, height=7, width=7):
+            # For CLIP ViT: output shape is [50, 1, 768] (Seq_len, Batch, Channels)
+            tensor = tensor.permute(1, 0, 2) # [1, 50, 768]
+            result = tensor[:, 1:, :].reshape(tensor.size(0), height, width, tensor.size(2)) 
+            result = result.transpose(2, 3).transpose(1, 2)
+            return result
+
         if model_type == "vit":
-            # For ViT, we typically use the last normalization layer before the final projection
+            # For ViT, we use the last normalization layer before the final projection
             target_layers = [base_model.visual.transformer.resblocks[-1].ln_1]
-            cam = EigenCAM(model=base_model.visual, target_layers=target_layers)
+            cam = EigenCAM(model=base_model.visual, target_layers=target_layers, reshape_transform=reshape_transform)
         else:
             # For ResNet (RN50), we use the last bottleneck layer
             target_layers = [base_model.visual.layer4[-1]]
@@ -117,6 +123,9 @@ def extract_image_attention(model, preprocess, image_path, text_query, device, m
         grayscale_cam = cv2.resize(grayscale_cam, (rgb_img.shape[1], rgb_img.shape[0]))
         cam_image = show_cam_on_image(rgb_img, grayscale_cam, use_rgb=True)
         
+        # Revert model dtype
+        base_model.to(prev_dtype)
+
         return original_image, cam_image
     except Exception as e:
         print(f"CAM extraction failed: {e}")
