@@ -8,7 +8,7 @@ training:
   batch_size: 32
   learning_rate: 0.001
   epochs: 20
-  k_shots: [8, 16, 32]
+  k_shots: [8] # add 16, 32 if have time
   device: "cuda"
 
 models:

@@ -69,7 +69,7 @@ def create_few_shot_splits(data, n_max_shots=32, seed=42):
             
     return train_32_list, test_list
 
-def create_dataloaders(train_data, test_data, image_dir, preprocess, batch_size=32, k=32, n_captions=5, num_workers=4):
+def create_dataloaders(train_data, test_data, image_dir, preprocess, batch_size=32, k=32, n_captions=5, num_workers=2):
     # Sample k shots from the max shots train set
     train_k_data = []
     class_to_train_items = defaultdict(list)
