@@ -208,8 +208,8 @@
         <h2>Exploratory Data Analysis (EDA)</h2>
         <p>Our dataset exhibits natural distributions simulating real-world scenarios. We visualized image samples with
             their paired texts below.</p>
-        <img src="images/eda_distribution.png" alt="Data Distribution Bar Chart">
-        <img src="images/eda_grid.png" alt="3x3 Image Grid">
+        <img src="images/data_dist.png" alt="Data Distribution Bar Chart">
+        <img src="images/samples_plot.png" alt="3x3 Image Grid">
 
         <h2>Data Configuration & Workflow</h2>
         <ul>
@@ -228,11 +228,14 @@
 
         <h2>Training Performance (WandB)</h2>
         <p>The models track parameters such as Accuracy and macro F1 curves over continuous fine-tuning.</p>
-        <img src="images/wandb_accuracy_plot.png" alt="WandB Accuracy Output">
+        <img src="images/vit_b32_8shot_train_acc.png" alt="Training Accuracy">
+        <img src="images/vit_b32_8shot_train_loss.png" alt="Training Loss">
+        <img src="images/vit_b32_8shot_eval_acc.png" alt="Evaluation Accuracy">
+        <img src="images/vit_b32_8shot_eval_f1.png" alt="Evaluation F1 Score">
 
         <h2>Interpretability & Visualization</h2>
         <p>Understanding what regions models rely on via Attention Rollout, GradCam, and EigenCam.</p>
-        <img src="images/gradcam_sample.png" alt="GradCAM interpretations">
+        <img src="images/grad_cam.png" alt="GradCAM interpretations">
 
         <footer>
             <p>Built with PyTorch, CLIP, Hugging Face Gradio, and WandB. <br><i class="fas fa-heart"
