@@ -94,7 +94,7 @@ class LinearProbeClassifier(nn.Module):
             
         # Reshape to apply linear layer independently to each similarity score
         # Then we use CE Loss over the candidates
-        cosine_sims_reshaped = cosine_sims.view(-1, 1) # (B*K, 1)
+        cosine_sims_reshaped = cosine_sims.view(-1, 1).to(torch.float32) # (B*K, 1)
         logits_reshaped = self.linear_head(cosine_sims_reshaped) # (B*K, 1)
         logits = logits_reshaped.view(B, K) # (B, K)
             
