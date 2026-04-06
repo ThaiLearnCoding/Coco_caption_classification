@@ -7,12 +7,6 @@ import matplotlib.pyplot as plt
 import clip
 from PIL import Image
 
-try:
-    from pytorch_grad_cam import GradCAM, EigenCAM
-    from pytorch_grad_cam.utils.image import show_cam_on_image
-except ImportError:
-    pass
-
 # CLIP normalization for ViT and ResNet
 # Reference: https://github.com/openai/CLIP/blob/main/clip/clip.py#L79
 clip_normalize = Normalize(
@@ -80,6 +74,13 @@ def extract_image_attention(model, preprocess, image_path, text_query, device, m
     Extract attention map using EigenCAM for ViT or GradCAM for ResNet.
     For simplicity, we visualize what the image encoder focuses on.
     """
+    try:
+        from pytorch_grad_cam import GradCAM, EigenCAM
+        from pytorch_grad_cam.utils.image import show_cam_on_image
+    except ImportError:
+        print("Please restart runtime or install grad-cam: !pip install grad-cam opencv-python-headless")
+        return None, None
+
     try:
         # If wrapped in our custom classifier, get the base model
         if hasattr(model, 'model'):
