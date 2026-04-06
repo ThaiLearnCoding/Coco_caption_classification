@@ -110,7 +110,9 @@ def extract_image_attention(model, preprocess, image_path, text_query, device, m
         print(f"CAM extraction failed: {e}")
         return None, None
 
-def plot_prediction_visualizations(subset_data, vit_zs_model, rn50_zs_model, preprocess_vit, preprocess_rn50, device):
+import os
+
+def plot_prediction_visualizations(subset_data, vit_zs_model, rn50_zs_model, preprocess_vit, preprocess_rn50, device, image_dir='../coco_subset_images/images'):
     """
     Plot and visualize attention maps using GradCAM / EigenCAM.
     """
@@ -121,9 +123,8 @@ def plot_prediction_visualizations(subset_data, vit_zs_model, rn50_zs_model, pre
         
         # Select a sample image from subset_data
         sample = subset_data[0]
-        img_path = sample['image']
-        true_label = sample['binary_label']
-        text_query = "an image showing the object" if true_label == 1 else "an image without the object"
+        img_path = os.path.join(image_dir, f"{sample['image_id']}.jpg")
+        text_query = sample['choices'][sample['ground_truth_idx']]
         
         # Helper to plot
         def plot_cam(ax_orig, ax_cam, orig_img, cam_img, title):
@@ -149,9 +150,8 @@ def plot_prediction_visualizations(subset_data, vit_zs_model, rn50_zs_model, pre
         # Visualize another sample
         if len(subset_data) > 1:
             sample2 = subset_data[-1]
-            img_path2 = sample2['image']
-            true_label2 = sample2['binary_label']
-            text_query2 = "an image showing the object" if true_label2 == 1 else "an image without the object"
+            img_path2 = os.path.join(image_dir, f"{sample2['image_id']}.jpg")
+            text_query2 = sample2['choices'][sample2['ground_truth_idx']]
             
             vit_orig2, vit_cam2 = extract_image_attention(vit_zs_model, preprocess_vit, img_path2, text_query2, device, model_type="vit")
             plot_cam(axes[0, 2], axes[0, 3], vit_orig2, vit_cam2, "ViT EigenCAM (Sample 2)")
