@@ -62,7 +62,7 @@ class ResidualDualProbeClassifier(nn.Module):
         self.dim = self.model.visual.output_dim
         
         # Residual Dual-Encoder heads
-        self.dropout = nn.Dropout(p=0.3)
+        self.dropout = nn.Dropout(p=0.4)
         self.img_gate = nn.Linear(self.dim, self.dim)
         self.txt_gate = nn.Linear(self.dim, self.dim)
         
