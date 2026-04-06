@@ -20,22 +20,23 @@ class CocoCaptionDataset(Dataset):
     def __getitem__(self, idx):
         item = self.data_list[idx]
         image_id = item['image_id']
-        image_path = os.path.join(self.image_dir, item['file_name'])
+        image_path = os.path.join(self.image_dir, f"{image_id}.jpg")
         
         image = self.preprocess(Image.open(image_path).convert("RGB"))
         
-        # Get ground truth
-        gt_caption = item['caption'] # Assuming 'caption' holds the GT
+        # Get all choices and figure out ground truth & distractors
+        choices = item['choices']
+        gt_idx_orig = item['ground_truth_idx']
+        gt_caption = choices[gt_idx_orig]
         
-        # Get distractors
-        distractors = item['distractors']
+        distractors = [c for i, c in enumerate(choices) if i != gt_idx_orig]
         
         # Sample distractors to match n_captions - 1
         num_distractors_needed = self.n_captions - 1
         if len(distractors) >= num_distractors_needed:
             selected_distractors = random.sample(distractors, num_distractors_needed)
         else:
-            # Handle edge case if not enough distractors (shouldn't happen with proper dataset)
+            # Handle edge case if not enough distractors
             selected_distractors = distractors + [distractors[0]] * (num_distractors_needed - len(distractors))
             
         captions = [gt_caption] + selected_distractors
@@ -47,12 +48,12 @@ class CocoCaptionDataset(Dataset):
         shuffled_captions = [captions[i] for i in shuffled_indices]
         gt_index = shuffled_indices.index(0) # Index of the ground truth in the shuffled list
         
-        return image, shuffled_captions, gt_index, image_id, item['category']
+        return image, shuffled_captions, gt_index, image_id, item['true_label']
 
 def create_few_shot_splits(data, n_max_shots=32, seed=42):
     class_to_items = defaultdict(list)
     for item in data:
-        class_to_items[item['category']].append(item)
+        class_to_items[item['true_label']].append(item)
         
     train_32_list = []
     test_list = []
@@ -73,7 +74,7 @@ def create_dataloaders(train_data, test_data, image_dir, preprocess, batch_size=
     train_k_data = []
     class_to_train_items = defaultdict(list)
     for item in train_data:
-         class_to_train_items[item['category']].append(item)
+         class_to_train_items[item['true_label']].append(item)
          
     for cls, items in class_to_train_items.items():
         if len(items) >= k:
