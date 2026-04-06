@@ -1,0 +1,11 @@
+gradio>=4.0.0
+plotly
+Pillow
+torch>=2.0.0
+torchvision>=0.15.0
+clip @ git+https://github.com/openai/CLIP.git
+wandb
+pandas
+scikit-learn
+matplotlib
+numpy

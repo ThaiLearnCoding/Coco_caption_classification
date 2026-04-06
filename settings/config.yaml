@@ -1,0 +1,19 @@
+dataset:
+  subset_dir: "coco_subset_images"
+  subset_file: "coco_multimodal_subset.json"
+  num_distractors: 4 # So N=5 (1 GT + 4 distractors)
+
+training:
+  batch_size: 32
+  learning_rate: 0.001
+  epochs: 20
+  k_shots: [8, 16, 32]
+  device: "cuda"
+
+models:
+  clip_vit: "ViT-B/32"
+  clip_rn50: "RN50"
+  
+wandb:
+  project: "coco_caption_classification"
+  entity: "thailearncoding" # Add your wandb username/entity here

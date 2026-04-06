@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COCO Multimodal Caption Classification</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #2c3e50;
+            border-bottom: 1px solid #efefef;
+            padding-bottom: 5px;
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .links a {
+            padding: 10px 15px;
+            margin-right: 10px;
+            display: inline-block;
+            background-color: #0366d6;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+
+        .links a:hover {
+            background-color: #024b9e;
+        }
+
+        code {
+            background-color: #f6f8fa;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+        }
+
+        pre {
+            background-color: #f6f8fa;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>COCO Multimodal Caption Classification</h1>
+
+    <div class="links">
+        <a href="#">GitHub Source Code</a>
+        <a href="#">Video Demo (YouTube)</a>
+        <a href="#">Video Report (YouTube)</a>
+        <a href="#">Gradio Demo (HF Spaces)</a>
+    </div>
+
+    <h2>Introduction</h2>
+    <p>This project evaluates <strong>Zero-shot and Few-shot Learning</strong> using CLIP models on the COCO dataset.
+        Instead of standard categorization, the task requires the model to correctly identify the true caption among
+        distracted candidates.</p>
+    <ul>
+        <li><strong>Input:</strong> An image and N=5 candidate captions (1 ground-truth, 4 random distractors).</li>
+        <li><strong>Output:</strong> The index of the predicted matching caption.</li>
+        <li><strong>Dataset:</strong> A curated subset containing 10 categories (bear, zebra, elephant, etc.), with ~30K
+            total samples carefully filtered from standard COCO multimodal subsets.</li>
+    </ul>
+
+    <h2>Exploratory Data Analysis (EDA)</h2>
+    <p>Our dataset exhibits natural distributions simulating real-world scenarios. We visualized image samples with
+        their paired texts below.</p>
+    <img src="images/eda_distribution.png" alt="Data Distribution Bar Chart">
+    <img src="images/eda_grid.png" alt="3x3 Image Grid">
+
+    <h2>Data Configuration & Workflow</h2>
+    <ul>
+        <li><strong>Splitting:</strong> $k=\{0, 8, 16, 32\}$ shots removed exclusively for the linear probing,
+            preserving strict test set separation.</li>
+        <li><strong>Normalization:</strong> Configured precisely per standard CLIP requirements (mean `[0.481, 0.457,
+            0.408]` vs `[0.268, 0.261, 0.275]`).</li>
+    </ul>
+
+    <h2>Model Architecture</h2>
+    <p>Using ViT-B/32 and ResNet50 vision encoders. We attach a custom 1D Linear head and fine-tune using Cross-Entropy
+        over the generated logit similarity scores.</p>
+    <img src="images/architecture.png" alt="Model Architecture Flowchart">
+
+    <h2>Training Performance (WandB)</h2>
+    <p>The models track parameters such as Accuracy and macro F1 curves over continuous fine-tuning.</p>
+    <img src="images/wandb_accuracy_plot.png" alt="WandB Accuracy Output">
+
+    <h2>Interpretability & Visualization</h2>
+    <p>Understanding what regions models rely on via Attention Rollout, GradCam, and EigenCam.</p>
+    <img src="images/gradcam_sample.png" alt="GradCAM interpretations">
+
+    <footer>
+        <p><em>Built with PyTorch, CLIP, Hugging Face Gradio, and WandB.</em></p>
+    </footer>
+</body>
+
+</html>
