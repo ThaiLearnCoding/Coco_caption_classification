@@ -12,9 +12,9 @@ class CLIPZeroShotClassifier(nn.Module):
 
     def forward(self, image, text_candidates):
         # image shape (B, C, H, W)
-        # text_candidates shape [B][K] list of list of strings
+        # text_candidates shape tuple of length K, each containing B strings
         B = image.shape[0]
-        K = len(text_candidates[0])
+        K = len(text_candidates)
         
         # Tokenize text
         # Flatten the list of lists into a single list
@@ -29,9 +29,9 @@ class CLIPZeroShotClassifier(nn.Module):
             image_features = image_features / image_features.norm(dim=-1, keepdim=True)
             text_features = text_features / text_features.norm(dim=-1, keepdim=True)
 
-            # Reshape text features back to (B, K, D)
+            # Reshape text features back to (B, K, C)
             C = image_features.shape[-1]
-            text_features = text_features.view(B, K, C)
+            text_features = text_features.view(K, B, C).transpose(0, 1)
 
             # Compute similarities: (B, 1, C) @ (B, C, K) -> (B, 1, K) -> (B, K)
             logit_scale = self.model.logit_scale.exp()
@@ -70,7 +70,7 @@ class LinearProbeClassifier(nn.Module):
         
     def forward(self, image, text_candidates):
         B = image.shape[0]
-        K = len(text_candidates[0])
+        K = len(text_candidates)
         
         flat_texts = [text for sublist in text_candidates for text in sublist]
         text_tokens = clip.tokenize(flat_texts).to(self.device)
@@ -83,7 +83,7 @@ class LinearProbeClassifier(nn.Module):
             text_features = text_features / text_features.norm(dim=-1, keepdim=True)
 
             C = image_features.shape[-1]
-            text_features = text_features.view(B, K, C)
+            text_features = text_features.view(K, B, C).transpose(0, 1)
             
             # Compute baseline cosine similarity
             # image_features: (B, 1, C), text_features.transpose(1, 2): (B, C, K)
