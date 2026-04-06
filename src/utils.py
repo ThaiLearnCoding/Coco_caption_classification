@@ -184,3 +184,60 @@ def plot_prediction_visualizations(subset_data, vit_zs_model, rn50_zs_model, pre
         plt.show()
     else:
         print("Data not available for visualization.")
+
+def plot_failure_cases(model, dataloader, device, image_dir, num_cases=4):
+    """
+    Find and plot failure cases from the dataloader.
+    """
+    model.eval()
+    failures = []
+    
+    with torch.no_grad():
+        for batch in dataloader:
+            images, text_candidates, targets, image_ids, _ = batch
+            images = images.to(device)
+            targets = targets.to(device)
+            
+            logits = model(images, text_candidates)
+            preds = torch.argmax(logits, dim=1)
+            
+            for i in range(len(preds)):
+                if preds[i] != targets[i]:
+                    img_path = os.path.join(image_dir, f"{image_ids[i]}.jpg")
+                    # Dataloader gives text_candidates as a list of tuples, where text_candidates[j] is the j-th candidate for all items in batch
+                    # So text_candidates[j][i] is the j-th candidate for the i-th item in the batch.
+                    gt_idx = targets[i].item()
+                    pred_idx = preds[i].item()
+                    gt_text = text_candidates[gt_idx][i]
+                    pred_text = text_candidates[pred_idx][i]
+                    
+                    failures.append((img_path, gt_text, pred_text))
+                    
+                    if len(failures) >= num_cases:
+                        break
+            if len(failures) >= num_cases:
+                break
+                
+    if len(failures) == 0:
+        print("No failure cases found!")
+        return
+        
+    num_cases = min(num_cases, len(failures))
+    fig, axes = plt.subplots(1, num_cases, figsize=(6 * num_cases, 6))
+    if num_cases == 1:
+        axes = [axes]
+        
+    import textwrap
+    for idx, (img_path, gt_text, pred_text) in enumerate(failures):
+        ax = axes[idx]
+        img = Image.open(img_path).convert("RGB")
+        ax.imshow(img)
+        ax.axis('off')
+        
+        wrapped_gt = "\\n".join(textwrap.wrap(f"GT: {gt_text}", width=40))
+        wrapped_pred = "\\n".join(textwrap.wrap(f"Pred: {pred_text}", width=40))
+        ax.set_title(f"{wrapped_gt}\\n\\n{wrapped_pred}", fontsize=10, loc='left')
+        
+    plt.tight_layout()
+    plt.show()
+
