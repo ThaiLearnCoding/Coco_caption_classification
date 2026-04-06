@@ -62,6 +62,7 @@ class ResidualDualProbeClassifier(nn.Module):
         self.dim = self.model.visual.output_dim
         
         # Residual Dual-Encoder heads
+        self.dropout = nn.Dropout(p=0.3)
         self.img_gate = nn.Linear(self.dim, self.dim)
         self.txt_gate = nn.Linear(self.dim, self.dim)
         
@@ -82,9 +83,9 @@ class ResidualDualProbeClassifier(nn.Module):
             image_features = self.model.encode_image(image).float()
             text_features = self.model.encode_text(text_tokens).float()
 
-        # Apply residual connection
-        image_features = image_features + self.img_gate(image_features)
-        text_features = text_features + self.txt_gate(text_features)
+        # Apply residual connection with dropout to mitigate overfitting
+        image_features = image_features + self.img_gate(self.dropout(image_features))
+        text_features = text_features + self.txt_gate(self.dropout(text_features))
 
         # L2 Normalize
         image_features = image_features / image_features.norm(dim=-1, keepdim=True)

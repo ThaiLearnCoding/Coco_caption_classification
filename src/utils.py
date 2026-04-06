@@ -81,6 +81,12 @@ def extract_image_attention(model, preprocess, image_path, text_query, device, m
     For simplicity, we visualize what the image encoder focuses on.
     """
     try:
+        # If wrapped in our custom classifier, get the base model
+        if hasattr(model, 'model'):
+            base_model = model.model
+        else:
+            base_model = model
+            
         # Load and preprocess image
         original_image = Image.open(image_path).convert("RGB")
         img_tensor = preprocess(original_image).unsqueeze(0).to(device)
@@ -93,12 +99,12 @@ def extract_image_attention(model, preprocess, image_path, text_query, device, m
         # Determine target layer based on model type
         if model_type == "vit":
             # For ViT, we typically use the last normalization layer before the final projection
-            target_layers = [model.visual.transformer.resblocks[-1].ln_1]
-            cam = EigenCAM(model=model.visual, target_layers=target_layers)
+            target_layers = [base_model.visual.transformer.resblocks[-1].ln_1]
+            cam = EigenCAM(model=base_model.visual, target_layers=target_layers)
         else:
             # For ResNet (RN50), we use the last bottleneck layer
-            target_layers = [model.visual.layer4[-1]]
-            cam = GradCAM(model=model.visual, target_layers=target_layers)
+            target_layers = [base_model.visual.layer4[-1]]
+            cam = GradCAM(model=base_model.visual, target_layers=target_layers)
             
         # Generate CAM
         grayscale_cam = cam(input_tensor=img_tensor, targets=None)[0, :]
