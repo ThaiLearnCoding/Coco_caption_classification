@@ -253,9 +253,21 @@
         </ul>
 
         <h2>Model Architecture</h2>
-        <p>Using ViT-B/32 and ResNet50 vision encoders. We attach a custom 1D Linear head and fine-tune using
-            Cross-Entropy
-            over the generated logit similarity scores.</p>
+        <p>We use CLIP backbones (ViT-B/32 and RN50) and keep them frozen, then add lightweight residual adapters
+            to refine image-text alignment for few-shot learning. The model predicts the correct caption by comparing
+            image and text features using cosine similarity.</p>
+        <ul>
+            <li><strong>Frozen CLIP encoders:</strong> Provide strong zero-shot representations without overfitting on
+                small data.</li>
+            <li><strong>Residual dual adapters (image/text):</strong> Bottleneck layers that learn small corrections on
+                top of CLIP features, initialized at zero for stable warm-start from zero-shot.</li>
+            <li><strong>Dropout in adapters:</strong> Adds regularization to prevent memorization in the few-shot
+                regime.</li>
+            <li><strong>L2 normalization + similarity logits:</strong> Keeps the prediction head aligned with CLIP's
+                pretraining geometry.</li>
+            <li><strong>Cross-entropy on candidate captions:</strong> Trains the model to select the correct caption
+                among distractors.</li>
+        </ul>
         <img src="images/CLIP_architecture.png" alt="Architecture of CLIP model">
         <img src="images/Few-shot_architecture.png" alt="Residual Dual for few-shot using CLIP">
 
