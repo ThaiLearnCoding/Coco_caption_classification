@@ -1,6 +1,8 @@
 import torch
 import torch.nn.functional as F
 from sklearn.metrics import accuracy_score, f1_score
+from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
 from torchvision.transforms import Compose, Resize, CenterCrop, ToTensor, Normalize
 import cv2
 import numpy as np
@@ -359,10 +361,11 @@ def plot_failure_cases(model, dataloader, device, image_dir, num_cases=4):
                     # So text_candidates[j][i] is the j-th candidate for the i-th item in the batch.
                     gt_idx = targets[i].item()
                     pred_idx = preds[i].item()
+                    candidates = [text_candidates[j][i] for j in range(len(text_candidates))]
                     gt_text = text_candidates[gt_idx][i]
                     pred_text = text_candidates[pred_idx][i]
-                    
-                    failures.append((img_path, gt_text, pred_text))
+
+                    failures.append((img_path, gt_text, pred_text, candidates))
                     
                     if len(failures) >= num_cases:
                         break
@@ -379,7 +382,7 @@ def plot_failure_cases(model, dataloader, device, image_dir, num_cases=4):
         axes = [axes]
         
     import textwrap
-    for idx, (img_path, gt_text, pred_text) in enumerate(failures):
+    for idx, (img_path, gt_text, pred_text, candidates) in enumerate(failures):
         ax = axes[idx]
         img = Image.open(img_path).convert("RGB")
         ax.imshow(img)
@@ -411,7 +414,78 @@ def plot_failure_cases(model, dataloader, device, image_dir, num_cases=4):
             clip_on=False
         )
 
+        plot_text_embedding_map(
+            candidates,
+            gt_text,
+            pred_text,
+            model,
+            device,
+            title=f"Text Similarity Map (Case {idx + 1})"
+        )
+
     fig.tight_layout()
     fig.subplots_adjust(top=0.82)
+    plt.show()
+
+
+def plot_text_embedding_map(
+    texts,
+    gt_text,
+    pred_text,
+    model,
+    device,
+    title="Text Similarity Map",
+    method="pca",
+):
+    if not texts or len(texts) < 2:
+        print("Not enough texts to plot embedding map.")
+        return
+
+    base_model = model.model if hasattr(model, 'model') else model
+    base_model.eval()
+
+    tokens = clip.tokenize(texts).to(device)
+    with torch.no_grad():
+        text_feats = base_model.encode_text(tokens).float()
+    text_feats = text_feats / text_feats.norm(dim=-1, keepdim=True)
+    text_feats = text_feats.detach().cpu().numpy()
+
+    if method == "tsne" and len(texts) >= 3:
+        reducer = TSNE(n_components=2, init="random", perplexity=min(10, len(texts) - 1), random_state=42)
+        coords = reducer.fit_transform(text_feats)
+    else:
+        reducer = PCA(n_components=2)
+        coords = reducer.fit_transform(text_feats)
+
+    fig, ax = plt.subplots(figsize=(6, 5))
+    colors = []
+    markers = []
+    for text in texts:
+        if text == gt_text:
+            colors.append('#16a34a')
+            markers.append('o')
+        elif text == pred_text:
+            colors.append('#dc2626')
+            markers.append('X')
+        else:
+            colors.append('#94a3b8')
+            markers.append('o')
+
+    for i, (x, y) in enumerate(coords):
+        ax.scatter(x, y, color=colors[i], marker=markers[i], s=80, alpha=0.9)
+        ax.text(x + 0.01, y + 0.01, str(i), fontsize=9)
+
+    ax.set_title(title, fontsize=11)
+    ax.set_xticks([])
+    ax.set_yticks([])
+
+    legend_handles = [
+        plt.Line2D([0], [0], marker='o', color='w', label='Ground Truth', markerfacecolor='#16a34a', markersize=8),
+        plt.Line2D([0], [0], marker='X', color='w', label='Predicted', markerfacecolor='#dc2626', markersize=8),
+        plt.Line2D([0], [0], marker='o', color='w', label='Distractor', markerfacecolor='#94a3b8', markersize=8),
+    ]
+    ax.legend(handles=legend_handles, loc='best', fontsize=8)
+
+    plt.tight_layout()
     plt.show()
 

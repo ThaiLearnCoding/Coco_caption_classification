@@ -15,7 +15,14 @@ from tqdm import tqdm
 from . import utils
 
 
-def plot_eda(subset_data, image_dir="../coco_subset_images/images", sample_size=9):
+def plot_eda(
+    subset_data,
+    image_dir="../coco_subset_images/images",
+    sample_size=9,
+    export_dir=None,
+    export_prefix="eda_",
+    save_grid_png=False,
+):
     if not subset_data:
         print("No data available for EDA.")
         return None, None
@@ -38,6 +45,10 @@ def plot_eda(subset_data, image_dir="../coco_subset_images/images", sample_size=
         template="plotly_white",
     )
     fig.show()
+
+    if export_dir:
+        os.makedirs(export_dir, exist_ok=True)
+        fig.write_json(os.path.join(export_dir, f"{export_prefix}dist.json"))
 
     sample_size = min(sample_size, len(subset_data))
     samples = random.sample(subset_data, sample_size)
@@ -75,6 +86,8 @@ def plot_eda(subset_data, image_dir="../coco_subset_images/images", sample_size=
 
     fig_grid.suptitle("Random 3x3 Image Grid with Captions", fontsize=14)
     fig_grid.tight_layout(rect=[0, 0, 1, 0.95])
+    if save_grid_png and export_dir:
+        fig_grid.savefig(os.path.join(export_dir, f"{export_prefix}grid.png"), dpi=150)
     plt.show()
 
     return fig, fig_grid
@@ -518,6 +531,8 @@ def run_evaluation(
     k_shots_list=None,
     image_dir=None,
     models_dir="../models",
+    export_dir=None,
+    export_prefix="",
 ):
     if k_shots_list is None:
         k_shots_list = config.get("training", {}).get("k_shots", [8, 16, 32])
@@ -700,5 +715,13 @@ def run_evaluation(
         template="plotly_white",
     )
     fig_time.show()
+
+    if export_dir:
+        os.makedirs(export_dir, exist_ok=True)
+        fig_acc.write_json(os.path.join(export_dir, f"{export_prefix}acc.json"))
+        fig_f1.write_json(os.path.join(export_dir, f"{export_prefix}f1_macro.json"))
+        fig_f1_micro.write_json(os.path.join(export_dir, f"{export_prefix}f1_micro.json"))
+        fig_f1_weighted.write_json(os.path.join(export_dir, f"{export_prefix}f1_weighted.json"))
+        fig_time.write_json(os.path.join(export_dir, f"{export_prefix}time.json"))
 
     return results_df
