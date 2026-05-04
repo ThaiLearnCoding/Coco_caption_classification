@@ -655,15 +655,11 @@
                 </table>
             </div>
 
-            <h3>Interactive performance curves</h3>
-            <p>Plotly charts load from <code>docs/plot/</code>. Export JSON from the notebook to refresh the dashboard.
-            </p>
+            <h3>Evaluation curves by model</h3>
+            <p>Each plot groups metrics for a single backbone across k-shot values.</p>
             <div class="chart-grid">
-                <div id="accPlot" style="height: 360px;"></div>
-                <div id="f1MacroPlot" style="height: 360px;"></div>
-                <div id="f1MicroPlot" style="height: 360px;"></div>
-                <div id="f1WeightedPlot" style="height: 360px;"></div>
-                <div id="timePlot" style="height: 360px;"></div>
+                <div id="vitEvalPlot" style="height: 360px;"></div>
+                <div id="rn50EvalPlot" style="height: 360px;"></div>
             </div>
         </section>
 
@@ -694,13 +690,10 @@
     <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
     <script>
         const plotFiles = [
-            { id: "accPlot", file: "plot/acc.json" },
-            { id: "f1MacroPlot", file: "plot/f1_macro.json" },
-            { id: "f1MicroPlot", file: "plot/f1_micro.json" },
-            { id: "f1WeightedPlot", file: "plot/f1_weighted.json" },
-            { id: "timePlot", file: "plot/time.json" },
             { id: "vitTrainPlot", file: "plot/vit_b32_train.json" },
-            { id: "rn50TrainPlot", file: "plot/rn50_train.json" }
+            { id: "rn50TrainPlot", file: "plot/rn50_train.json" },
+            { id: "vitEvalPlot", file: "plot/vit_b32_eval.json" },
+            { id: "rn50EvalPlot", file: "plot/rn50_eval.json" }
         ];
 
         plotFiles.forEach(({ id, file }) => {

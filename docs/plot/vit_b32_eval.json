@@ -1,0 +1,97 @@
+{
+    "data": [
+        {
+            "x": [
+                0,
+                8
+            ],
+            "y": [
+                0.899656,
+                0.9
+            ],
+            "type": "scatter",
+            "mode": "lines+markers",
+            "name": "Accuracy"
+        },
+        {
+            "x": [
+                0,
+                8
+            ],
+            "y": [
+                0.899521,
+                0.900034
+            ],
+            "type": "scatter",
+            "mode": "lines+markers",
+            "name": "F1 Macro"
+        },
+        {
+            "x": [
+                0,
+                8
+            ],
+            "y": [
+                0.899656,
+                0.9
+            ],
+            "type": "scatter",
+            "mode": "lines+markers",
+            "name": "F1 Micro"
+        },
+        {
+            "x": [
+                0,
+                8
+            ],
+            "y": [
+                0.899657,
+                0.900013
+            ],
+            "type": "scatter",
+            "mode": "lines+markers",
+            "name": "F1 Weighted"
+        },
+        {
+            "x": [
+                0,
+                8
+            ],
+            "y": [
+                12.293756,
+                12.257848
+            ],
+            "type": "scatter",
+            "mode": "lines+markers",
+            "name": "Time / Sample (ms)",
+            "yaxis": "y2",
+            "line": {
+                "dash": "dot"
+            }
+        }
+    ],
+    "layout": {
+        "title": "ViT-B/32 Evaluation Metrics",
+        "xaxis": {
+            "title": "Shots"
+        },
+        "yaxis": {
+            "title": "Accuracy / F1"
+        },
+        "yaxis2": {
+            "title": "Time / Sample (ms)",
+            "overlaying": "y",
+            "side": "right"
+        },
+        "legend": {
+            "orientation": "h",
+            "y": -0.25
+        },
+        "margin": {
+            "l": 60,
+            "r": 60,
+            "t": 50,
+            "b": 70
+        }
+    }
+}
