@@ -10,7 +10,7 @@ training:
   weight_decay: 0.01 # Stronger L2 to reduce overfitting
   label_smoothing: 0.2
   dropout_p: 0.6
-  early_stopping_patience: 3
+  early_stopping_patience: 2
   min_delta: 0.002
   epochs: 25 # Reduced to 25 to save time
   k_shots: [8] # add 16, 32 if have time
