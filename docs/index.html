@@ -284,6 +284,31 @@
             margin: 0;
         }
 
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .config-card {
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 18px;
+            background: #fff;
+            display: grid;
+            gap: 10px;
+        }
+
+        .config-card h3 {
+            margin-bottom: 4px;
+        }
+
+        .config-card ul {
+            margin: 0;
+            padding-left: 18px;
+        }
+
         .performance-table {
             width: 100%;
             border-collapse: collapse;
@@ -319,6 +344,20 @@
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
             gap: 18px;
+        }
+
+        .image-grid.grid-2 {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .image-stack {
+            display: grid;
+            gap: 18px;
+        }
+
+        .image-block {
+            display: grid;
+            gap: 10px;
         }
 
         img {
@@ -373,6 +412,10 @@
             .button {
                 width: 100%;
                 justify-content: center;
+            }
+
+            .image-grid.grid-2 {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -433,7 +476,8 @@
             <p>Curated COCO subset for caption matching with strict train and evaluation separation.</p>
             <ul>
                 <li><strong>Source:</strong> COCO subset metadata at
-                    <code>coco_subset_images/coco_multimodal_subset.json</code>.</li>
+                    <code>coco_subset_images/coco_multimodal_subset.json</code>.
+                </li>
                 <li><strong>Input:</strong> 1 image + 12 candidate captions (1 correct, 11 distractors).</li>
                 <li><strong>Splits:</strong> k-shot removal for <code>k={0, 8}</code> preserves test integrity.</li>
                 <li><strong>Normalization:</strong> CLIP-specific mean and std per backbone.</li>
@@ -441,11 +485,64 @@
         </section>
 
         <section class="panel">
+            <h2>Model configuration</h2>
+            <p>Reference settings used for training and evaluation discussions.</p>
+            <div class="config-grid">
+                <div class="config-card">
+                    <h3>Dataset</h3>
+                    <ul>
+                        <li><strong>Subset dir:</strong> <code>coco_subset_images</code></li>
+                        <li><strong>Images:</strong> <code>coco_subset_images/images</code></li>
+                        <li><strong>Metadata:</strong> <code>coco_multimodal_subset.json</code></li>
+                        <li><strong>Distractors:</strong> 11 (N=12 total captions)</li>
+                    </ul>
+                </div>
+                <div class="config-card">
+                    <h3>Training</h3>
+                    <ul>
+                        <li><strong>Epochs:</strong> 25</li>
+                        <li><strong>Batch size:</strong> 32</li>
+                        <li><strong>Learning rate:</strong> 3e-4</li>
+                        <li><strong>Weight decay:</strong> 0.01</li>
+                        <li><strong>Label smoothing:</strong> 0.2</li>
+                        <li><strong>Dropout:</strong> 0.6</li>
+                        <li><strong>Early stop:</strong> patience 2, min delta 0.002</li>
+                        <li><strong>k-shots:</strong> 8 (current demo)</li>
+                    </ul>
+                </div>
+                <div class="config-card">
+                    <h3>Models</h3>
+                    <ul>
+                        <li><strong>Backbones:</strong> ViT-B/32, RN50</li>
+                        <li><strong>Adapters:</strong> residual dual (image + text)</li>
+                        <li><strong>Trainable params:</strong> 65,536 to 262,144</li>
+                        <li><strong>Checkpoints:</strong> <code>models/best_*.pth</code></li>
+                    </ul>
+                </div>
+                <div class="config-card">
+                    <h3>Tracking</h3>
+                    <ul>
+                        <li><strong>Device:</strong> cuda</li>
+                        <li><strong>WandB project:</strong> coco_caption_classification</li>
+                        <li><strong>WandB entity:</strong> thailearncoding-ho-chi-minh-university-of-technology</li>
+                        <li><strong>Eval set:</strong> 11,640 samples</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel">
             <h2>Exploratory data analysis (EDA)</h2>
             <p>Category distribution and sample pairs from the curated subset.</p>
-            <div class="image-grid">
-                <img src="images/data_dist.png" alt="Data Distribution Bar Chart">
-                <img src="images/samples_plot.png" alt="Sample Image Grid">
+            <div class="image-stack">
+                <div class="image-block">
+                    <h3>Data distribution</h3>
+                    <img src="images/data_dist.png" alt="Data Distribution Bar Chart">
+                </div>
+                <div class="image-block">
+                    <h3>Samples with captions</h3>
+                    <img src="images/samples_plot.png" alt="Sample Image Grid">
+                </div>
             </div>
         </section>
 
@@ -460,12 +557,10 @@
 
         <section class="panel">
             <h2>Training phase (loss curves)</h2>
-            <p>Fine-tuning dynamics for the ViT-B/32 8-shot adapter run.</p>
-            <div class="image-grid">
-                <img src="images/vit_b32_8shot_train_acc.png" alt="Training Accuracy">
-                <img src="images/vit_b32_8shot_train_loss.png" alt="Training Loss">
-                <img src="images/vit_b32_8shot_eval_acc.png" alt="Evaluation Accuracy">
-                <img src="images/vit_b32_8shot_eval_f1.png" alt="Evaluation F1 Score">
+            <p>Training curves per model (loss, train accuracy, eval accuracy, and F1 scores).</p>
+            <div class="chart-grid">
+                <div id="vitTrainPlot" style="height: 360px;"></div>
+                <div id="rn50TrainPlot" style="height: 360px;"></div>
             </div>
         </section>
 
@@ -583,7 +678,7 @@
         <section class="panel">
             <h2>Hard cases</h2>
             <p>Misclassified or ambiguous samples for error analysis.</p>
-            <div class="image-grid">
+            <div class="image-grid grid-2">
                 <img src="images/hardcase_1.png" alt="Hard case 1">
                 <img src="images/hardcase_2.png" alt="Hard case 2">
                 <img src="images/hardcase_3.png" alt="Hard case 3">
@@ -603,7 +698,9 @@
             { id: "f1MacroPlot", file: "plot/f1_macro.json" },
             { id: "f1MicroPlot", file: "plot/f1_micro.json" },
             { id: "f1WeightedPlot", file: "plot/f1_weighted.json" },
-            { id: "timePlot", file: "plot/time.json" }
+            { id: "timePlot", file: "plot/time.json" },
+            { id: "vitTrainPlot", file: "plot/vit_b32_train.json" },
+            { id: "rn50TrainPlot", file: "plot/rn50_train.json" }
         ];
 
         plotFiles.forEach(({ id, file }) => {

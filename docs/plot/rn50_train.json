@@ -1,0 +1,119 @@
+{
+    "data": [
+        {
+            "x": [
+                1,
+                2,
+                3
+            ],
+            "y": [
+                2.9203,
+                3.0865,
+                2.8446
+            ],
+            "type": "scatter",
+            "mode": "lines+markers",
+            "name": "Loss",
+            "yaxis": "y2"
+        },
+        {
+            "x": [
+                1,
+                2,
+                3
+            ],
+            "y": [
+                0.7875,
+                0.7625,
+                0.825
+            ],
+            "type": "scatter",
+            "mode": "lines+markers",
+            "name": "Train Acc"
+        },
+        {
+            "x": [
+                1,
+                2,
+                3
+            ],
+            "y": [
+                0.9016,
+                0.8976,
+                0.8918
+            ],
+            "type": "scatter",
+            "mode": "lines+markers",
+            "name": "Eval Acc"
+        },
+        {
+            "x": [
+                1,
+                2,
+                3
+            ],
+            "y": [
+                0.9014,
+                0.8975,
+                0.8918
+            ],
+            "type": "scatter",
+            "mode": "lines+markers",
+            "name": "F1 Macro"
+        },
+        {
+            "x": [
+                1,
+                2,
+                3
+            ],
+            "y": [
+                0.9016,
+                0.8976,
+                0.8918
+            ],
+            "type": "scatter",
+            "mode": "lines+markers",
+            "name": "F1 Micro"
+        },
+        {
+            "x": [
+                1,
+                2,
+                3
+            ],
+            "y": [
+                0.9016,
+                0.8976,
+                0.8918
+            ],
+            "type": "scatter",
+            "mode": "lines+markers",
+            "name": "F1 Weighted"
+        }
+    ],
+    "layout": {
+        "title": "RN50 (8-shot) Training Curves",
+        "xaxis": {
+            "title": "Epoch"
+        },
+        "yaxis": {
+            "title": "Accuracy / F1"
+        },
+        "yaxis2": {
+            "title": "Loss",
+            "overlaying": "y",
+            "side": "right"
+        },
+        "legend": {
+            "orientation": "h",
+            "y": -0.25
+        },
+        "margin": {
+            "l": 60,
+            "r": 60,
+            "t": 50,
+            "b": 70
+        }
+    }
+}

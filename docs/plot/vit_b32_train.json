@@ -1,0 +1,119 @@
+{
+    "data": [
+        {
+            "x": [
+                1,
+                2,
+                3
+            ],
+            "y": [
+                3.0351,
+                2.972,
+                3.0242
+            ],
+            "type": "scatter",
+            "mode": "lines+markers",
+            "name": "Loss",
+            "yaxis": "y2"
+        },
+        {
+            "x": [
+                1,
+                2,
+                3
+            ],
+            "y": [
+                0.9,
+                0.9,
+                0.9
+            ],
+            "type": "scatter",
+            "mode": "lines+markers",
+            "name": "Train Acc"
+        },
+        {
+            "x": [
+                1,
+                2,
+                3
+            ],
+            "y": [
+                0.9,
+                0.8997,
+                0.8999
+            ],
+            "type": "scatter",
+            "mode": "lines+markers",
+            "name": "Eval Acc"
+        },
+        {
+            "x": [
+                1,
+                2,
+                3
+            ],
+            "y": [
+                0.8999,
+                0.8997,
+                0.8997
+            ],
+            "type": "scatter",
+            "mode": "lines+markers",
+            "name": "F1 Macro"
+        },
+        {
+            "x": [
+                1,
+                2,
+                3
+            ],
+            "y": [
+                0.9,
+                0.8997,
+                0.8999
+            ],
+            "type": "scatter",
+            "mode": "lines+markers",
+            "name": "F1 Micro"
+        },
+        {
+            "x": [
+                1,
+                2,
+                3
+            ],
+            "y": [
+                0.9,
+                0.8997,
+                0.8999
+            ],
+            "type": "scatter",
+            "mode": "lines+markers",
+            "name": "F1 Weighted"
+        }
+    ],
+    "layout": {
+        "title": "ViT-B/32 (8-shot) Training Curves",
+        "xaxis": {
+            "title": "Epoch"
+        },
+        "yaxis": {
+            "title": "Accuracy / F1"
+        },
+        "yaxis2": {
+            "title": "Loss",
+            "overlaying": "y",
+            "side": "right"
+        },
+        "legend": {
+            "orientation": "h",
+            "y": -0.25
+        },
+        "margin": {
+            "l": 60,
+            "r": 60,
+            "t": 50,
+            "b": 70
+        }
+    }
+}
