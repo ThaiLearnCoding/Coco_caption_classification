@@ -149,7 +149,10 @@ def extract_text_attention_rollout(model, text_query, device, max_tokens=32):
             base_model = model
 
         base_model.eval()
-        tokenizer = SimpleTokenizer()
+        try:
+            tokenizer = SimpleTokenizer()
+        except Exception:
+            tokenizer = None
 
         text_tokens = clip.tokenize([text_query]).to(device)
         token_ids = text_tokens[0].detach().cpu().tolist()
@@ -165,6 +168,7 @@ def extract_text_attention_rollout(model, text_query, device, max_tokens=32):
 
         def _attn_hook(module, inputs, output):
             x = inputs[0]
+            x = x.float()
             attn_mask = None
             if len(inputs) > 1:
                 attn_mask = inputs[1]
@@ -173,29 +177,71 @@ def extract_text_attention_rollout(model, text_query, device, max_tokens=32):
 
             if attn_mask is not None:
                 attn_mask = attn_mask.to(dtype=x.dtype, device=x.device)
+                if attn_mask.shape[0] != x.shape[0]:
+                    attn_mask = attn_mask[:x.shape[0], :x.shape[0]]
+
+            in_proj_weight = module.in_proj_weight
+            in_proj_bias = module.in_proj_bias
+            out_proj_weight = module.out_proj.weight
+            out_proj_bias = module.out_proj.bias
+            if in_proj_weight.dtype != x.dtype:
+                in_proj_weight = in_proj_weight.to(dtype=x.dtype)
+            if in_proj_bias is not None and in_proj_bias.dtype != x.dtype:
+                in_proj_bias = in_proj_bias.to(dtype=x.dtype)
+            if out_proj_weight.dtype != x.dtype:
+                out_proj_weight = out_proj_weight.to(dtype=x.dtype)
+            if out_proj_bias is not None and out_proj_bias.dtype != x.dtype:
+                out_proj_bias = out_proj_bias.to(dtype=x.dtype)
 
             embed_dim = module.in_proj_weight.shape[1]
-            _, attn_weights = F.multi_head_attention_forward(
-                query=x,
-                key=x,
-                value=x,
-                embed_dim_to_check=embed_dim,
-                num_heads=module.num_heads,
-                in_proj_weight=module.in_proj_weight,
-                in_proj_bias=module.in_proj_bias,
-                bias_k=None,
-                bias_v=None,
-                add_zero_attn=False,
-                dropout_p=0.0,
-                out_proj_weight=module.out_proj.weight,
-                out_proj_bias=module.out_proj.bias,
-                training=module.training,
-                key_padding_mask=None,
-                need_weights=True,
-                attn_mask=attn_mask,
-                use_separate_proj_weight=False,
-                average_attn_weights=False,
-            )
+            try:
+                _, attn_weights = F.multi_head_attention_forward(
+                    query=x,
+                    key=x,
+                    value=x,
+                    embed_dim_to_check=embed_dim,
+                    num_heads=module.num_heads,
+                    in_proj_weight=in_proj_weight,
+                    in_proj_bias=in_proj_bias,
+                    bias_k=None,
+                    bias_v=None,
+                    add_zero_attn=False,
+                    dropout_p=0.0,
+                    out_proj_weight=out_proj_weight,
+                    out_proj_bias=out_proj_bias,
+                    training=module.training,
+                    key_padding_mask=None,
+                    need_weights=True,
+                    attn_mask=attn_mask,
+                    use_separate_proj_weight=False,
+                    average_attn_weights=False,
+                )
+            except TypeError:
+                _, attn_weights = F.multi_head_attention_forward(
+                    query=x,
+                    key=x,
+                    value=x,
+                    embed_dim_to_check=embed_dim,
+                    num_heads=module.num_heads,
+                    in_proj_weight=in_proj_weight,
+                    in_proj_bias=in_proj_bias,
+                    bias_k=None,
+                    bias_v=None,
+                    add_zero_attn=False,
+                    dropout_p=0.0,
+                    out_proj_weight=out_proj_weight,
+                    out_proj_bias=out_proj_bias,
+                    training=module.training,
+                    key_padding_mask=None,
+                    need_weights=True,
+                    attn_mask=attn_mask,
+                    use_separate_proj_weight=False,
+                )
+
+            if attn_weights.dim() == 2:
+                attn_weights = attn_weights.unsqueeze(0).unsqueeze(0)
+            elif attn_weights.dim() == 3:
+                attn_weights = attn_weights.unsqueeze(1)
             attn_mats.append(attn_weights.detach())
 
         hooks = []
@@ -227,7 +273,10 @@ def extract_text_attention_rollout(model, text_query, device, max_tokens=32):
         for idx, token_id in enumerate(token_ids[:seq_len]):
             if token_id in (0, 49406, 49407):
                 continue
-            token_text = tokenizer.decode([token_id]).replace("</w>", "").strip()
+            if tokenizer is not None:
+                token_text = tokenizer.decode([token_id]).replace("</w>", "").strip()
+            else:
+                token_text = f"tok_{token_id}"
             if token_text:
                 tokens.append(token_text)
                 token_scores.append(scores[idx])
