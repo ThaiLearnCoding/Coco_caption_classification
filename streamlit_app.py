@@ -4,8 +4,6 @@ import tempfile
 import streamlit as st
 import torch
 from PIL import Image
-import matplotlib.pyplot as plt
-
 from src import model_arch, utils
 
 
@@ -67,17 +65,11 @@ def render_attention(model, image, text_query, model_type, device):
         except OSError:
             pass
 
-    tokens, scores = utils.extract_text_attention_rollout(model, text_query, device)
-
-    fig, ax = plt.subplots(figsize=(6, 3))
-    utils.plot_text_attention(ax, tokens, scores, "Text Attention Rollout")
-    fig.tight_layout()
-
-    return orig, cam, fig
+    return orig, cam
 
 
 st.title("COCO Caption Classification Demo")
-st.caption("Zero-shot and 8-shot caption matching with image + text attention")
+st.caption("Zero-shot and 8-shot caption matching with image attention")
 
 with st.sidebar:
     st.header("Configuration")
@@ -158,23 +150,15 @@ if run_btn:
                     )
 
                 model_type = "vit" if model_name == "ViT-B/32" else "rn50"
-                orig, cam, fig = render_attention(
-                    model, image, pred_caption, model_type, device
-                )
+                orig, cam = render_attention(model, image, pred_caption, model_type, device)
 
                 if orig is not None and cam is not None:
                     st.markdown("**Image attention:**")
                     st.image([orig, cam], caption=["Original", "Attention"], width=260)
 
-                st.markdown("**Text attention:**")
-                st.pyplot(fig)
-
                 if gt_idx is not None and gt_idx != pred_idx:
                     gt_caption = captions[gt_idx]
-                    st.markdown("**Ground-truth attention:**")
-                    orig_gt, cam_gt, fig_gt = render_attention(
-                        model, image, gt_caption, model_type, device
-                    )
+                    st.markdown("**Ground-truth image attention:**")
+                    orig_gt, cam_gt = render_attention(model, image, gt_caption, model_type, device)
                     if orig_gt is not None and cam_gt is not None:
                         st.image([orig_gt, cam_gt], caption=["GT Original", "GT Attention"], width=260)
-                    st.pyplot(fig_gt)
