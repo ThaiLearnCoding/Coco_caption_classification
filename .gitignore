@@ -3,3 +3,4 @@ coco_subset_images/*
 !coco_subset_images/coco_multimodal_subset.json
 src/__pycache__/*
 notebooks/wandb/*
+.venv/*

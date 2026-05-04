@@ -1,0 +1,13 @@
+streamlit==1.36.0
+torch
+torchvision
+numpy
+pillow
+matplotlib
+scikit-learn
+opencv-python-headless
+grad-cam
+ftfy
+regex
+tqdm
+git+https://github.com/openai/CLIP.git

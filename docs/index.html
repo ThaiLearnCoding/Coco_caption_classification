@@ -220,7 +220,8 @@
                     class="fab fa-github"></i> GitHub Source Code</a>
             <a href="#" class="yt-btn"><i class="fab fa-youtube"></i> Video Demo</a>
             <a href="#" class="yt-btn"><i class="fab fa-youtube"></i> Video Report</a>
-            <a href="#" class="hf-btn"><i class="fas fa-rocket"></i> Gradio Demo</a>
+            <a href="https://huggingface.co/spaces/USERNAME/SPACE_NAME" class="hf-btn" target="_blank"><i
+                    class="fas fa-rocket"></i> Streamlit Demo</a>
         </div>
 
         <h2>Introduction</h2>
@@ -242,6 +243,15 @@
             their paired texts below.</p>
         <img src="images/data_dist.png" alt="Data Distribution Bar Chart">
         <img src="images/samples_plot.png" alt="3x3 Image Grid">
+
+        <h2>Interactive Results</h2>
+        <p>Plotly charts are loaded dynamically from JSON files in <code>docs/plot/</code>. Export the JSON from the
+            notebook and copy them into this folder to render the charts below.</p>
+        <div id="accPlot" style="height: 360px;"></div>
+        <div id="f1MacroPlot" style="height: 360px;"></div>
+        <div id="f1MicroPlot" style="height: 360px;"></div>
+        <div id="f1WeightedPlot" style="height: 360px;"></div>
+        <div id="timePlot" style="height: 360px;"></div>
 
         <h2>Data Configuration & Workflow</h2>
         <ul>
@@ -351,6 +361,29 @@
                     style="color: #ef4444; margin-top: 10px;"></i></p>
         </footer>
     </div>
+
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+    <script>
+        const plotFiles = [
+            { id: "accPlot", file: "plot/acc.json" },
+            { id: "f1MacroPlot", file: "plot/f1_macro.json" },
+            { id: "f1MicroPlot", file: "plot/f1_micro.json" },
+            { id: "f1WeightedPlot", file: "plot/f1_weighted.json" },
+            { id: "timePlot", file: "plot/time.json" }
+        ];
+
+        plotFiles.forEach(({ id, file }) => {
+            fetch(file)
+                .then((res) => res.json())
+                .then((fig) => Plotly.newPlot(id, fig.data, fig.layout))
+                .catch(() => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.innerHTML = "<p style='color:#94a3b8;'>Plot JSON not found: " + file + "</p>";
+                    }
+                });
+        });
+    </script>
 </body>
 
 </html>
