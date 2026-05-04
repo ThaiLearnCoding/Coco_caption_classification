@@ -1,14 +1,10 @@
 import torch
-import torch.nn.functional as F
 from sklearn.metrics import accuracy_score, f1_score
-from sklearn.decomposition import PCA
-from sklearn.manifold import TSNE
 from torchvision.transforms import Compose, Resize, CenterCrop, ToTensor, Normalize
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 import clip
-from clip.simple_tokenizer import SimpleTokenizer
 from PIL import Image
 
 # CLIP normalization for ViT and ResNet
@@ -47,11 +43,9 @@ def evaluate_model(model, dataloader, device):
             all_targets.extend(targets.cpu().numpy())
             
     acc = accuracy_score(all_targets, all_preds)
-    f1_macro = f1_score(all_targets, all_preds, average='macro')
-    f1_micro = f1_score(all_targets, all_preds, average='micro')
-    f1_weighted = f1_score(all_targets, all_preds, average='weighted')
-
-    return acc, f1_macro, f1_micro, f1_weighted
+    f1 = f1_score(all_targets, all_preds, average='macro')
+    
+    return acc, f1
 
 def calculate_model_size_params(model):
     # Total parameters
@@ -137,179 +131,6 @@ def extract_image_attention(model, preprocess, image_path, text_query, device, m
         print(f"CAM extraction failed: {e}")
         return None, None
 
-
-def extract_text_attention_rollout(model, text_query, device, max_tokens=32):
-    """
-    Extract attention rollout from the text transformer to get token-level importance.
-    """
-    try:
-        if hasattr(model, 'model'):
-            base_model = model.model
-        else:
-            base_model = model
-
-        base_model.eval()
-        try:
-            tokenizer = SimpleTokenizer()
-        except Exception:
-            tokenizer = None
-
-        text_tokens = clip.tokenize([text_query]).to(device)
-        token_ids = text_tokens[0].detach().cpu().tolist()
-
-        # Locate end-of-text token if present
-        eot_token = 49407
-        if eot_token in token_ids:
-            seq_len = token_ids.index(eot_token) + 1
-        else:
-            seq_len = len(token_ids)
-
-        attn_mats = []
-
-        def _attn_hook(module, inputs, output):
-            x = inputs[0]
-            x = x.float()
-            attn_mask = None
-            if len(inputs) > 1:
-                attn_mask = inputs[1]
-            elif hasattr(module, 'attn_mask'):
-                attn_mask = module.attn_mask
-
-            if attn_mask is not None:
-                attn_mask = attn_mask.to(dtype=x.dtype, device=x.device)
-                if attn_mask.shape[0] != x.shape[0]:
-                    attn_mask = attn_mask[:x.shape[0], :x.shape[0]]
-
-            in_proj_weight = module.in_proj_weight
-            in_proj_bias = module.in_proj_bias
-            out_proj_weight = module.out_proj.weight
-            out_proj_bias = module.out_proj.bias
-            if in_proj_weight.dtype != x.dtype:
-                in_proj_weight = in_proj_weight.to(dtype=x.dtype)
-            if in_proj_bias is not None and in_proj_bias.dtype != x.dtype:
-                in_proj_bias = in_proj_bias.to(dtype=x.dtype)
-            if out_proj_weight.dtype != x.dtype:
-                out_proj_weight = out_proj_weight.to(dtype=x.dtype)
-            if out_proj_bias is not None and out_proj_bias.dtype != x.dtype:
-                out_proj_bias = out_proj_bias.to(dtype=x.dtype)
-
-            embed_dim = module.in_proj_weight.shape[1]
-            try:
-                _, attn_weights = F.multi_head_attention_forward(
-                    query=x,
-                    key=x,
-                    value=x,
-                    embed_dim_to_check=embed_dim,
-                    num_heads=module.num_heads,
-                    in_proj_weight=in_proj_weight,
-                    in_proj_bias=in_proj_bias,
-                    bias_k=None,
-                    bias_v=None,
-                    add_zero_attn=False,
-                    dropout_p=0.0,
-                    out_proj_weight=out_proj_weight,
-                    out_proj_bias=out_proj_bias,
-                    training=module.training,
-                    key_padding_mask=None,
-                    need_weights=True,
-                    attn_mask=attn_mask,
-                    use_separate_proj_weight=False,
-                    average_attn_weights=False,
-                )
-            except TypeError:
-                _, attn_weights = F.multi_head_attention_forward(
-                    query=x,
-                    key=x,
-                    value=x,
-                    embed_dim_to_check=embed_dim,
-                    num_heads=module.num_heads,
-                    in_proj_weight=in_proj_weight,
-                    in_proj_bias=in_proj_bias,
-                    bias_k=None,
-                    bias_v=None,
-                    add_zero_attn=False,
-                    dropout_p=0.0,
-                    out_proj_weight=out_proj_weight,
-                    out_proj_bias=out_proj_bias,
-                    training=module.training,
-                    key_padding_mask=None,
-                    need_weights=True,
-                    attn_mask=attn_mask,
-                    use_separate_proj_weight=False,
-                )
-
-            if attn_weights.dim() == 2:
-                attn_weights = attn_weights.unsqueeze(0).unsqueeze(0)
-            elif attn_weights.dim() == 3:
-                attn_weights = attn_weights.unsqueeze(1)
-            attn_mats.append(attn_weights.detach())
-
-        hooks = []
-        for block in base_model.transformer.resblocks:
-            hooks.append(block.attn.register_forward_hook(_attn_hook))
-
-        with torch.no_grad():
-            _ = base_model.encode_text(text_tokens)
-
-        for hook in hooks:
-            hook.remove()
-
-        if not attn_mats:
-            return [], []
-
-        seq_len = min(seq_len, attn_mats[0].shape[-1])
-        rollout = torch.eye(seq_len, device=device)
-        for attn in attn_mats:
-            attn = attn[:, :, :seq_len, :seq_len]
-            attn_mean = attn.mean(dim=1)[0]
-            attn_mean = attn_mean / (attn_mean.sum(dim=-1, keepdim=True) + 1e-8)
-            attn_mean = (attn_mean + torch.eye(seq_len, device=device)) / 2.0
-            rollout = attn_mean @ rollout
-
-        scores = rollout[0].detach().cpu().tolist()
-
-        tokens = []
-        token_scores = []
-        for idx, token_id in enumerate(token_ids[:seq_len]):
-            if token_id in (0, 49406, 49407):
-                continue
-            if tokenizer is not None:
-                token_text = tokenizer.decode([token_id]).replace("</w>", "").strip()
-            else:
-                token_text = f"tok_{token_id}"
-            if token_text:
-                tokens.append(token_text)
-                token_scores.append(scores[idx])
-
-        if max_tokens and len(tokens) > max_tokens:
-            tokens = tokens[:max_tokens]
-            token_scores = token_scores[:max_tokens]
-
-        return tokens, token_scores
-    except Exception as e:
-        print(f"Text attention rollout failed: {e}")
-        return [], []
-
-
-def plot_text_attention(ax, tokens, scores, title):
-    """
-    Plot token-level attention as a colored bar chart.
-    """
-    if not tokens:
-        ax.set_title(f"{title}\n(no tokens)")
-        ax.axis('off')
-        return
-
-    scores = np.array(scores, dtype=float)
-    scores = (scores - scores.min()) / (scores.max() - scores.min() + 1e-8)
-
-    colors = plt.cm.viridis(scores)
-    ax.bar(range(len(tokens)), scores, color=colors)
-    ax.set_xticks(range(len(tokens)))
-    ax.set_xticklabels(tokens, rotation=45, ha='right', fontsize=8)
-    ax.set_ylim(0, 1.0)
-    ax.set_title(title, fontsize=10)
-
 import os
 
 def plot_prediction_visualizations(subset_data, vit_zs_model, rn50_zs_model, preprocess_vit, preprocess_rn50, device, image_dir='../coco_subset_images/images'):
@@ -361,29 +182,6 @@ def plot_prediction_visualizations(subset_data, vit_zs_model, rn50_zs_model, pre
             
         plt.tight_layout()
         plt.show()
-
-        # Text attention rollout visualization
-        fig_txt, axes_txt = plt.subplots(2, 2, figsize=(16, 8))
-        fig_txt.suptitle("Text Attention Rollout (Token Importance)", fontsize=14)
-
-        vit_tokens, vit_scores = extract_text_attention_rollout(vit_zs_model, text_query, device)
-        plot_text_attention(axes_txt[0, 0], vit_tokens, vit_scores, "ViT Text Attention (Sample 1)")
-
-        rn_tokens, rn_scores = extract_text_attention_rollout(rn50_zs_model, text_query, device)
-        plot_text_attention(axes_txt[1, 0], rn_tokens, rn_scores, "RN50 Text Attention (Sample 1)")
-
-        if len(subset_data) > 1:
-            vit_tokens2, vit_scores2 = extract_text_attention_rollout(vit_zs_model, text_query2, device)
-            plot_text_attention(axes_txt[0, 1], vit_tokens2, vit_scores2, "ViT Text Attention (Sample 2)")
-
-            rn_tokens2, rn_scores2 = extract_text_attention_rollout(rn50_zs_model, text_query2, device)
-            plot_text_attention(axes_txt[1, 1], rn_tokens2, rn_scores2, "RN50 Text Attention (Sample 2)")
-        else:
-            axes_txt[0, 1].axis('off')
-            axes_txt[1, 1].axis('off')
-
-        fig_txt.tight_layout(rect=[0, 0, 1, 0.95])
-        plt.show()
     else:
         print("Data not available for visualization.")
 
@@ -410,11 +208,10 @@ def plot_failure_cases(model, dataloader, device, image_dir, num_cases=4):
                     # So text_candidates[j][i] is the j-th candidate for the i-th item in the batch.
                     gt_idx = targets[i].item()
                     pred_idx = preds[i].item()
-                    candidates = [text_candidates[j][i] for j in range(len(text_candidates))]
                     gt_text = text_candidates[gt_idx][i]
                     pred_text = text_candidates[pred_idx][i]
-
-                    failures.append((img_path, gt_text, pred_text, candidates))
+                    
+                    failures.append((img_path, gt_text, pred_text))
                     
                     if len(failures) >= num_cases:
                         break
@@ -431,7 +228,7 @@ def plot_failure_cases(model, dataloader, device, image_dir, num_cases=4):
         axes = [axes]
         
     import textwrap
-    for idx, (img_path, gt_text, pred_text, candidates) in enumerate(failures):
+    for idx, (img_path, gt_text, pred_text) in enumerate(failures):
         ax = axes[idx]
         img = Image.open(img_path).convert("RGB")
         ax.imshow(img)
@@ -463,78 +260,8 @@ def plot_failure_cases(model, dataloader, device, image_dir, num_cases=4):
             clip_on=False
         )
 
-        plot_text_embedding_map(
-            candidates,
-            gt_text,
-            pred_text,
-            model,
-            device,
-            title=f"Text Similarity Map (Case {idx + 1})"
-        )
-
     fig.tight_layout()
     fig.subplots_adjust(top=0.82)
     plt.show()
 
-
-def plot_text_embedding_map(
-    texts,
-    gt_text,
-    pred_text,
-    model,
-    device,
-    title="Text Similarity Map",
-    method="pca",
-):
-    if not texts or len(texts) < 2:
-        print("Not enough texts to plot embedding map.")
-        return
-
-    base_model = model.model if hasattr(model, 'model') else model
-    base_model.eval()
-
-    tokens = clip.tokenize(texts).to(device)
-    with torch.no_grad():
-        text_feats = base_model.encode_text(tokens).float()
-    text_feats = text_feats / text_feats.norm(dim=-1, keepdim=True)
-    text_feats = text_feats.detach().cpu().numpy()
-
-    if method == "tsne" and len(texts) >= 3:
-        reducer = TSNE(n_components=2, init="random", perplexity=min(10, len(texts) - 1), random_state=42)
-        coords = reducer.fit_transform(text_feats)
-    else:
-        reducer = PCA(n_components=2)
-        coords = reducer.fit_transform(text_feats)
-
-    fig, ax = plt.subplots(figsize=(6, 5))
-    colors = []
-    markers = []
-    for text in texts:
-        if text == gt_text:
-            colors.append('#16a34a')
-            markers.append('o')
-        elif text == pred_text:
-            colors.append('#dc2626')
-            markers.append('X')
-        else:
-            colors.append('#94a3b8')
-            markers.append('o')
-
-    for i, (x, y) in enumerate(coords):
-        ax.scatter(x, y, color=colors[i], marker=markers[i], s=80, alpha=0.9)
-        ax.text(x + 0.01, y + 0.01, str(i), fontsize=9)
-
-    ax.set_title(title, fontsize=11)
-    ax.set_xticks([])
-    ax.set_yticks([])
-
-    legend_handles = [
-        plt.Line2D([0], [0], marker='o', color='w', label='Ground Truth', markerfacecolor='#16a34a', markersize=8),
-        plt.Line2D([0], [0], marker='X', color='w', label='Predicted', markerfacecolor='#dc2626', markersize=8),
-        plt.Line2D([0], [0], marker='o', color='w', label='Distractor', markerfacecolor='#94a3b8', markersize=8),
-    ]
-    ax.legend(handles=legend_handles, loc='best', fontsize=8)
-
-    plt.tight_layout()
-    plt.show()
 
