@@ -47,7 +47,14 @@ class CLIPZeroShotClassifier(nn.Module):
         return similarities
 
 class ResidualDualProbeClassifier(nn.Module):
-    def __init__(self, model_name="ViT-B/32", device="cuda" if torch.cuda.is_available() else "cpu", n_captions=12):
+    def __init__(
+        self,
+        model_name="ViT-B/32",
+        device="cuda" if torch.cuda.is_available() else "cpu",
+        n_captions=12,
+        dropout_p=0.6,
+        bottleneck_ratio=32,
+    ):
         super().__init__()
         self.device = device
         self.model, self.preprocess = clip.load(model_name, device=device)
@@ -60,10 +67,11 @@ class ResidualDualProbeClassifier(nn.Module):
         
         # Extract features dim based on model
         self.dim = self.model.visual.output_dim
+        self.bottleneck_ratio = bottleneck_ratio
         
         # Residual Dual-Encoder heads (Upgraded to Bottleneck Adapters to prevent parameter-heavy overfitting)
-        self.dropout = nn.Dropout(p=0.5)
-        hidden_dim = self.dim // 16 # Create a strict bottleneck constraint
+        self.dropout = nn.Dropout(p=dropout_p)
+        hidden_dim = max(1, self.dim // bottleneck_ratio) # Create a strict bottleneck constraint
         
         self.img_gate = nn.Sequential(
             nn.Linear(self.dim, hidden_dim, bias=False),

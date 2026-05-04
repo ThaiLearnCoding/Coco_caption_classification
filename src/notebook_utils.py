@@ -118,6 +118,11 @@ def train_linear_probe(
         image_dir = "../coco_subset_images/images"
 
     training_cfg = config.get("training", {}) if config else {}
+    label_smoothing = training_cfg.get("label_smoothing", 0.2)
+    dropout_p = training_cfg.get("dropout_p", 0.6)
+    early_stopping_patience = training_cfg.get("early_stopping_patience", 3)
+    min_delta = training_cfg.get("min_delta", 0.0)
+    bottleneck_ratio = getattr(model, "bottleneck_ratio", 32)
     k_train_loader, k_test_loader = data_loader.create_dataloaders(
         train_max_data,
         eval_data,
@@ -130,7 +135,7 @@ def train_linear_probe(
         only_new=only_new,
     )
 
-    hidden_dim = model.dim // 16
+    hidden_dim = max(1, model.dim // bottleneck_ratio)
     model.img_gate = nn.Sequential(
         nn.Linear(model.dim, hidden_dim, bias=False),
         nn.ReLU(inplace=True),
@@ -142,6 +147,8 @@ def train_linear_probe(
         nn.ReLU(inplace=True),
         nn.Linear(hidden_dim, model.dim, bias=False),
     ).to(device)
+
+    model.dropout = nn.Dropout(p=dropout_p).to(device)
 
     if not os.path.exists(models_dir):
         os.makedirs(models_dir)
@@ -155,10 +162,15 @@ def train_linear_probe(
         print(f"Loading existing checkpoint for {model_name} from {save_path}...")
         checkpoint = torch.load(save_path, map_location=device)
         if "img_gate" in checkpoint:
-            model.img_gate.load_state_dict(checkpoint["img_gate"])
-            model.txt_gate.load_state_dict(checkpoint["txt_gate"])
-            best_acc = checkpoint.get("best_acc", 0.0)
-            start_epoch = checkpoint.get("epoch", -1) + 1
+            try:
+                model.img_gate.load_state_dict(checkpoint["img_gate"])
+                model.txt_gate.load_state_dict(checkpoint["txt_gate"])
+                best_acc = checkpoint.get("best_acc", 0.0)
+                start_epoch = checkpoint.get("epoch", -1) + 1
+            except RuntimeError:
+                print("Checkpoint incompatible (shape mismatch), reinitializing gates")
+                nn.init.zeros_(model.img_gate[2].weight)
+                nn.init.zeros_(model.txt_gate[2].weight)
         else:
             print("Checkpoint incompatible (legacy format), using initial zeros")
             nn.init.zeros_(model.img_gate[2].weight)
@@ -169,9 +181,14 @@ def train_linear_probe(
             print(f"Warm-starting {model_name} from {prev_path}...")
             checkpoint = torch.load(prev_path, map_location=device)
             if "img_gate" in checkpoint:
-                model.img_gate.load_state_dict(checkpoint["img_gate"])
-                model.txt_gate.load_state_dict(checkpoint["txt_gate"])
-                warm_started = True
+                try:
+                    model.img_gate.load_state_dict(checkpoint["img_gate"])
+                    model.txt_gate.load_state_dict(checkpoint["txt_gate"])
+                    warm_started = True
+                except RuntimeError:
+                    print("Checkpoint incompatible (shape mismatch), using initial zeros")
+                    nn.init.zeros_(model.img_gate[2].weight)
+                    nn.init.zeros_(model.txt_gate[2].weight)
             else:
                 print("Checkpoint incompatible (legacy format), using initial zeros")
                 nn.init.zeros_(model.img_gate[2].weight)
@@ -208,10 +225,10 @@ def train_linear_probe(
         weight_decay=training_cfg.get("weight_decay", 1e-3),
     )
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epochs)
-    criterion = nn.CrossEntropyLoss(label_smoothing=0.2)
+    criterion = nn.CrossEntropyLoss(label_smoothing=label_smoothing)
     best_model_state = None
 
-    patience = 5
+    patience = early_stopping_patience
     epochs_no_improve = 0
 
     for epoch in range(start_epoch, num_epochs):
@@ -271,7 +288,7 @@ def train_linear_probe(
                 }
             )
 
-        if eval_acc > best_acc:
+        if eval_acc > best_acc + min_delta:
             best_acc = eval_acc
             best_model_state = {
                 "epoch": epoch,
@@ -286,7 +303,11 @@ def train_linear_probe(
 
         if epochs_no_improve >= patience:
             print(
-                f"Early stopping triggered at epoch {epoch+1}. No improvement for {patience} epochs."
+                "Early stopping triggered at epoch {}. No improvement >= {:.4f} for {} epochs.".format(
+                    epoch + 1,
+                    min_delta,
+                    patience,
+                )
             )
             break
 
@@ -435,7 +456,8 @@ def evaluate_zero_shot(
 
 def _ensure_probe_gates(model, device):
     if not hasattr(model, "img_gate") or not hasattr(model, "txt_gate"):
-        hidden_dim = model.dim // 16
+        bottleneck_ratio = getattr(model, "bottleneck_ratio", 32)
+        hidden_dim = max(1, model.dim // bottleneck_ratio)
         model.img_gate = nn.Sequential(
             nn.Linear(model.dim, hidden_dim, bias=False),
             nn.ReLU(inplace=True),
@@ -467,8 +489,12 @@ def _load_probe_checkpoint(model, model_name, k, device, models_dir):
         return False
 
     _ensure_probe_gates(model, device)
-    model.img_gate.load_state_dict(checkpoint["img_gate"])
-    model.txt_gate.load_state_dict(checkpoint["txt_gate"])
+    try:
+        model.img_gate.load_state_dict(checkpoint["img_gate"])
+        model.txt_gate.load_state_dict(checkpoint["txt_gate"])
+    except RuntimeError:
+        print(f"Checkpoint incompatible (shape mismatch): {save_path}")
+        return False
     return True
 
 
