@@ -13,7 +13,6 @@ Instead of standard categorical classification, the model is presented with an i
 
 ```text
 Coco_caption_classification/
-├── app.py                           # Gradio application
 ├── streamlit_app.py                 # Streamlit demo entry
 ├── requirements_streamlit.txt       # Streamlit dependencies
 ├── README.md                        # Documentation
@@ -37,8 +36,7 @@ Coco_caption_classification/
 │   └── wandb/                       # W and B runs
 ├── settings/                        # Configuration and requirements
 │   ├── config.yaml                  # Model and W and B variables
-│   ├── requirements.txt             # Primary environment targets
-│   └── requirements_gradio.txt      # Hugging Face targeted deps
+│   └── requirements.txt             # Primary environment targets
 └── src/                             # Core code
 	├── __init__.py
 	├── data_loader.py               # Dataset objects, subset loading and splits
@@ -58,22 +56,31 @@ Coco_caption_classification/
 4. Mount your drive and install dependencies from `settings/requirements.txt`.
 5. Run the cells to train. The configuration can be modified in `settings/config.yaml`.
 
-### Gradio Inference Demo
+### Streamlit Demo (Local)
 
-To launch the interactive N-shot visualizer app:
+To launch the Streamlit demo:
 
 ```bash
-pip install -r settings/requirements_gradio.txt
-python app.py
+pip install -r requirements_streamlit.txt
+streamlit run streamlit_app.py
 ```
 
-This renders a randomized subset display mapping 1 image against N distractors and graphs expected performance tracking across model backbones (ViT vs. RN50).
+The demo supports Zero-shot and 8-shot inference with attention visualizations.
+
+### Streamlit Demo (Hugging Face Spaces)
+
+1. Create a new Space and select the **Streamlit** SDK.
+2. Add the following files to the Space repo:
+	- `streamlit_app.py`
+	- `requirements.txt` (copy from `requirements_streamlit.txt`)
+	- `src/` and `models/` (or download weights inside the app)
+3. Commit and push to trigger the build.
 
 ## 🔬 Core Workflow
 
 1. **Vision Extractor:** Converts inputs using normalizations standard to CLIP variants (`ViT-B/32` or `RN50`).
 2. **Text Extractor:** Standardizes $N$-size list of texts into embedding tensors.
-3. **Linear Classification Probing:** Employs Cross-Entropy across dot-product similarities spanning $k=\{0, 8, 16, 32\}$.
+3. **Linear Classification Probing:** Employs Cross-Entropy across dot-product similarities spanning $k=\{0, 8\}$.
 4. **Analysis:** Metrics (Acc, Macro-F1), inference compute sizes, and GradCAM/EigenCam map generations.
 
 ## 📊 Report and Info

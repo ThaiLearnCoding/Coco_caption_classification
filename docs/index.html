@@ -561,8 +561,7 @@
             </div>
             <ul>
                 <li><strong>Input:</strong> 1 image + 12 candidate captions (1 correct, 11 distractors).</li>
-                <li><strong>Splits:</strong> k-shot removal for <code>k={0, 8, 16, 32}</code> preserves test integrity.
-                </li>
+                <li><strong>Splits:</strong> k-shot removal for <code>k={0, 8}</code> preserves test integrity.</li>
                 <li><strong>Normalization:</strong> CLIP-specific mean and std for each backbone.</li>
                 <li><strong>Adapters:</strong> Residual image and text adapters with L2 normalization and cosine logits.
                 </li>
@@ -570,7 +569,7 @@
         </section>
 
         <footer>
-            <p>Built with PyTorch, CLIP, Gradio, and WandB.</p>
+            <p>Built with PyTorch, CLIP, Streamlit, and WandB.</p>
         </footer>
     </main>
 

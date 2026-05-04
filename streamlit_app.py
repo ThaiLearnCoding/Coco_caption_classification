@@ -77,7 +77,7 @@ def render_attention(model, image, text_query, model_type, device):
 
 
 st.title("COCO Caption Classification Demo")
-st.caption("Zero-shot and few-shot caption matching with image + text attention")
+st.caption("Zero-shot and 8-shot caption matching with image + text attention")
 
 with st.sidebar:
     st.header("Configuration")
@@ -85,7 +85,15 @@ with st.sidebar:
     mode = st.selectbox("Mode", options=["Zero-shot", "Few-shot"], index=0)
     model_choices = ["ViT-B/32", "RN50"]
     selected_models = st.multiselect("Models", options=model_choices, default=model_choices)
-    k_shot = st.selectbox("Few-shot k", options=[2, 4, 8, 16, 32], index=2)
+    if mode == "Few-shot":
+        k_shot = st.selectbox(
+            "Few-shot k",
+            options=[8],
+            index=0,
+            help="Only 8-shot checkpoints are available right now.",
+        )
+    else:
+        k_shot = 0
     models_dir = st.text_input("Checkpoints directory", value="models")
 
 st.subheader("Inputs")
