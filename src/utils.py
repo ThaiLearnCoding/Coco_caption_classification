@@ -43,9 +43,11 @@ def evaluate_model(model, dataloader, device):
             all_targets.extend(targets.cpu().numpy())
             
     acc = accuracy_score(all_targets, all_preds)
-    f1 = f1_score(all_targets, all_preds, average='macro')
-    
-    return acc, f1
+    f1_macro = f1_score(all_targets, all_preds, average="macro")
+    f1_micro = f1_score(all_targets, all_preds, average="micro")
+    f1_weighted = f1_score(all_targets, all_preds, average="weighted")
+
+    return acc, f1_macro, f1_micro, f1_weighted
 
 def calculate_model_size_params(model):
     # Total parameters
