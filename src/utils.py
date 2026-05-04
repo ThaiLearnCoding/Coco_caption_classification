@@ -1,10 +1,12 @@
 import torch
+import torch.nn.functional as F
 from sklearn.metrics import accuracy_score, f1_score
 from torchvision.transforms import Compose, Resize, CenterCrop, ToTensor, Normalize
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 import clip
+from clip.simple_tokenizer import SimpleTokenizer
 from PIL import Image
 
 # CLIP normalization for ViT and ResNet
@@ -43,9 +45,11 @@ def evaluate_model(model, dataloader, device):
             all_targets.extend(targets.cpu().numpy())
             
     acc = accuracy_score(all_targets, all_preds)
-    f1 = f1_score(all_targets, all_preds, average='macro')
-    
-    return acc, f1
+    f1_macro = f1_score(all_targets, all_preds, average='macro')
+    f1_micro = f1_score(all_targets, all_preds, average='micro')
+    f1_weighted = f1_score(all_targets, all_preds, average='weighted')
+
+    return acc, f1_macro, f1_micro, f1_weighted
 
 def calculate_model_size_params(model):
     # Total parameters
@@ -131,6 +135,130 @@ def extract_image_attention(model, preprocess, image_path, text_query, device, m
         print(f"CAM extraction failed: {e}")
         return None, None
 
+
+def extract_text_attention_rollout(model, text_query, device, max_tokens=32):
+    """
+    Extract attention rollout from the text transformer to get token-level importance.
+    """
+    try:
+        if hasattr(model, 'model'):
+            base_model = model.model
+        else:
+            base_model = model
+
+        base_model.eval()
+        tokenizer = SimpleTokenizer()
+
+        text_tokens = clip.tokenize([text_query]).to(device)
+        token_ids = text_tokens[0].detach().cpu().tolist()
+
+        # Locate end-of-text token if present
+        eot_token = 49407
+        if eot_token in token_ids:
+            seq_len = token_ids.index(eot_token) + 1
+        else:
+            seq_len = len(token_ids)
+
+        attn_mats = []
+
+        def _attn_hook(module, inputs, output):
+            x = inputs[0]
+            attn_mask = None
+            if len(inputs) > 1:
+                attn_mask = inputs[1]
+            elif hasattr(module, 'attn_mask'):
+                attn_mask = module.attn_mask
+
+            if attn_mask is not None:
+                attn_mask = attn_mask.to(dtype=x.dtype, device=x.device)
+
+            embed_dim = module.in_proj_weight.shape[1]
+            _, attn_weights = F.multi_head_attention_forward(
+                query=x,
+                key=x,
+                value=x,
+                embed_dim_to_check=embed_dim,
+                num_heads=module.num_heads,
+                in_proj_weight=module.in_proj_weight,
+                in_proj_bias=module.in_proj_bias,
+                bias_k=None,
+                bias_v=None,
+                add_zero_attn=False,
+                dropout_p=0.0,
+                out_proj_weight=module.out_proj.weight,
+                out_proj_bias=module.out_proj.bias,
+                training=module.training,
+                key_padding_mask=None,
+                need_weights=True,
+                attn_mask=attn_mask,
+                use_separate_proj_weight=False,
+                average_attn_weights=False,
+            )
+            attn_mats.append(attn_weights.detach())
+
+        hooks = []
+        for block in base_model.transformer.resblocks:
+            hooks.append(block.attn.register_forward_hook(_attn_hook))
+
+        with torch.no_grad():
+            _ = base_model.encode_text(text_tokens)
+
+        for hook in hooks:
+            hook.remove()
+
+        if not attn_mats:
+            return [], []
+
+        seq_len = min(seq_len, attn_mats[0].shape[-1])
+        rollout = torch.eye(seq_len, device=device)
+        for attn in attn_mats:
+            attn = attn[:, :, :seq_len, :seq_len]
+            attn_mean = attn.mean(dim=1)[0]
+            attn_mean = attn_mean / (attn_mean.sum(dim=-1, keepdim=True) + 1e-8)
+            attn_mean = (attn_mean + torch.eye(seq_len, device=device)) / 2.0
+            rollout = attn_mean @ rollout
+
+        scores = rollout[0].detach().cpu().tolist()
+
+        tokens = []
+        token_scores = []
+        for idx, token_id in enumerate(token_ids[:seq_len]):
+            if token_id in (0, 49406, 49407):
+                continue
+            token_text = tokenizer.decode([token_id]).replace("</w>", "").strip()
+            if token_text:
+                tokens.append(token_text)
+                token_scores.append(scores[idx])
+
+        if max_tokens and len(tokens) > max_tokens:
+            tokens = tokens[:max_tokens]
+            token_scores = token_scores[:max_tokens]
+
+        return tokens, token_scores
+    except Exception as e:
+        print(f"Text attention rollout failed: {e}")
+        return [], []
+
+
+def plot_text_attention(ax, tokens, scores, title):
+    """
+    Plot token-level attention as a colored bar chart.
+    """
+    if not tokens:
+        ax.set_title(f"{title}\n(no tokens)")
+        ax.axis('off')
+        return
+
+    scores = np.array(scores, dtype=float)
+    scores = (scores - scores.min()) / (scores.max() - scores.min() + 1e-8)
+
+    colors = plt.cm.viridis(scores)
+    ax.bar(range(len(tokens)), scores, color=colors)
+    ax.set_xticks(range(len(tokens)))
+    ax.set_xticklabels(tokens, rotation=45, ha='right', fontsize=8)
+    ax.set_ylim(0, 1.0)
+    ax.set_title(title, fontsize=10)
+
 import os
 
 def plot_prediction_visualizations(subset_data, vit_zs_model, rn50_zs_model, preprocess_vit, preprocess_rn50, device, image_dir='../coco_subset_images/images'):
@@ -181,6 +309,29 @@ def plot_prediction_visualizations(subset_data, vit_zs_model, rn50_zs_model, pre
             plot_cam(axes[1, 2], axes[1, 3], rn50_orig2, rn50_cam2, "RN50 GradCAM (Sample 2)")
             
         plt.tight_layout()
+        plt.show()
+
+        # Text attention rollout visualization
+        fig_txt, axes_txt = plt.subplots(2, 2, figsize=(16, 8))
+        fig_txt.suptitle("Text Attention Rollout (Token Importance)", fontsize=14)
+
+        vit_tokens, vit_scores = extract_text_attention_rollout(vit_zs_model, text_query, device)
+        plot_text_attention(axes_txt[0, 0], vit_tokens, vit_scores, "ViT Text Attention (Sample 1)")
+
+        rn_tokens, rn_scores = extract_text_attention_rollout(rn50_zs_model, text_query, device)
+        plot_text_attention(axes_txt[1, 0], rn_tokens, rn_scores, "RN50 Text Attention (Sample 1)")
+
+        if len(subset_data) > 1:
+            vit_tokens2, vit_scores2 = extract_text_attention_rollout(vit_zs_model, text_query2, device)
+            plot_text_attention(axes_txt[0, 1], vit_tokens2, vit_scores2, "ViT Text Attention (Sample 2)")
+
+            rn_tokens2, rn_scores2 = extract_text_attention_rollout(rn50_zs_model, text_query2, device)
+            plot_text_attention(axes_txt[1, 1], rn_tokens2, rn_scores2, "RN50 Text Attention (Sample 2)")
+        else:
+            axes_txt[0, 1].axis('off')
+            axes_txt[1, 1].axis('off')
+
+        fig_txt.tight_layout(rect=[0, 0, 1, 0.95])
         plt.show()
     else:
         print("Data not available for visualization.")
@@ -233,11 +384,34 @@ def plot_failure_cases(model, dataloader, device, image_dir, num_cases=4):
         img = Image.open(img_path).convert("RGB")
         ax.imshow(img)
         ax.axis('off')
-        
-        wrapped_gt = "\\n".join(textwrap.wrap(f"GT: {gt_text}", width=40))
-        wrapped_pred = "\\n".join(textwrap.wrap(f"Pred: {pred_text}", width=40))
-        ax.set_title(f"{wrapped_gt}\\n\\n{wrapped_pred}", fontsize=10, loc='left')
-        
-    plt.tight_layout()
+
+        wrapped_gt = "\\n".join(textwrap.wrap(gt_text, width=40))
+        wrapped_pred = "\\n".join(textwrap.wrap(pred_text, width=40))
+
+        ax.text(
+            0.0,
+            1.12,
+            f"GT: {wrapped_gt}",
+            transform=ax.transAxes,
+            ha='left',
+            va='bottom',
+            fontsize=10,
+            color='green',
+            clip_on=False
+        )
+        ax.text(
+            0.0,
+            1.02,
+            f"Pred: {wrapped_pred}",
+            transform=ax.transAxes,
+            ha='left',
+            va='bottom',
+            fontsize=10,
+            color='red',
+            clip_on=False
+        )
+
+    fig.tight_layout()
+    fig.subplots_adjust(top=0.82)
     plt.show()
 
