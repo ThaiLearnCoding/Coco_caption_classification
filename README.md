@@ -12,26 +12,40 @@ Instead of standard categorical classification, the model is presented with an i
 ## 📂 Project Structure
 
 ```text
-coco_caption_classification/
+Coco_caption_classification/
+├── app.py                           # Gradio application
+├── streamlit_app.py                 # Streamlit demo entry
+├── requirements_streamlit.txt       # Streamlit dependencies
+├── README.md                        # Documentation
 ├── coco_subset_images/              # Extracted image data + JSON
-│   ├── images/                      # Link of images
-│   │   └── <id>.jpg                 # Base metadata definition
-│   └── coco_multimodal_subset.json  # Base metadata definition
-├── models/                          # Weights & checkpoints
-├── notebooks/
-│   └── train_colab.ipynb            # Google Colab main training notebook
-├── src/                             # Shared source scripts
-│   ├── data_loader.py               # Dataset objects, subset loading and splits
-│   ├── model_arch.py                # Wrapper models based on openai/CLIP
-│   ├── Image_ID_Exclusive_Sampling.ipynb # The data subset generation script
-│   └── utils.py                     # Evaluation functions & parameter counter
-├── docs/                     # Visual presentation output
-├── settings/
+│   ├── coco_multimodal_subset.json  # COCO subset metadata
+│   └── images/                      # Image files
+├── docs/                            # Results landing page and assets
+│   ├── index.html                   # Results dashboard
+│   ├── images/                      # Figures and diagrams
+│   └── plot/                        # Plotly JSON exports
+│       ├── acc.json
+│       ├── f1_macro.json
+│       ├── f1_micro.json
+│       ├── f1_weighted.json
+│       └── time.json
+├── models/                          # Checkpoints
+│   ├── best_rn50_8shot.pth
+│   └── best_vit_b32_8shot.pth
+├── notebooks/                       # Training and experiment logs
+│   ├── train_colab.ipynb            # Colab training notebook
+│   └── wandb/                       # W and B runs
+├── settings/                        # Configuration and requirements
+│   ├── config.yaml                  # Model and W and B variables
 │   ├── requirements.txt             # Primary environment targets
-│   ├── requirements_gradio.txt      # Huggingface targeted deps
-│   └── config.yaml                  # Model and wandb variables
-├── app.py                           # Gradio Hugging Face Application
-└── README.md                        # Documentation
+│   └── requirements_gradio.txt      # Hugging Face targeted deps
+└── src/                             # Core code
+	├── __init__.py
+	├── data_loader.py               # Dataset objects, subset loading and splits
+	├── model_arch.py                # Wrapper models based on openai/CLIP
+	├── notebook_utils.py            # Notebook helpers
+	├── utils.py                     # Evaluation functions and counters
+	└── Image_ID_Exclusive_Sampling.ipynb # Data subset generation
 ```
 
 ## 🚀 How to Run
