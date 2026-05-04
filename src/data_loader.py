@@ -69,23 +69,53 @@ def create_few_shot_splits(data, n_max_shots=32, seed=42):
             
     return train_32_list, test_list
 
-def create_dataloaders(train_data, test_data, image_dir, preprocess, batch_size=32, k=32, n_captions=12, num_workers=2):
+def create_dataloaders(
+    train_data,
+    test_data,
+    image_dir,
+    preprocess,
+    batch_size=32,
+    k=32,
+    n_captions=12,
+    num_workers=2,
+    prev_k=None,
+    seed=42,
+    only_new=False,
+):
     # Sample k shots from the max shots train set
     train_k_data = []
     class_to_train_items = defaultdict(list)
     for item in train_data:
-         class_to_train_items[item['true_label']].append(item)
-         
+        class_to_train_items[item['true_label']].append(item)
+
+    rng = random.Random(seed)
     for cls, items in class_to_train_items.items():
-        if len(items) >= k:
-             train_k_data.extend(random.sample(items, k))
+        items_sorted = sorted(items, key=lambda x: x.get('image_id', 0))
+
+        if prev_k is None or prev_k <= 0:
+            if len(items_sorted) >= k:
+                train_k_data.extend(rng.sample(items_sorted, k))
+            else:
+                train_k_data.extend(items_sorted)
+            continue
+
+        prev_k_eff = min(prev_k, len(items_sorted))
+        prev_samples = rng.sample(items_sorted, prev_k_eff)
+        if k <= prev_k_eff:
+            new_samples = []
         else:
-             train_k_data.extend(items)
-             
+            remaining = [item for item in items_sorted if item not in prev_samples]
+            new_samples = rng.sample(remaining, min(k - prev_k_eff, len(remaining)))
+
+        if only_new:
+            train_k_data.extend(new_samples)
+        else:
+            train_k_data.extend(prev_samples + new_samples)
+
     train_dataset = CocoCaptionDataset(train_k_data, image_dir, preprocess, n_captions)
     test_dataset = CocoCaptionDataset(test_data, image_dir, preprocess, n_captions)
-    
+
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
-    
+
     return train_loader, test_loader
